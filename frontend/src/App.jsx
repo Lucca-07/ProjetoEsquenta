@@ -3,7 +3,8 @@ import CardNumero from "./components/CardNumero/CardNumero";
 export default function App() {
   return (
     <>
-    <CardNumero numero="Numero..."></CardNumero>
+      <CardNumero numero="DDD 11 - 21
+55 11 919339392"></CardNumero>
     </>
   );
 }
