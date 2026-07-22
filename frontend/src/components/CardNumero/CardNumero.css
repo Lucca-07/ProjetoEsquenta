@@ -15,6 +15,7 @@
     text-align: center;
 }
 .checkbox-card-numero{
+    accent-color: #23496B;
     width: 20%;
     height: 30%;
     cursor: pointer;
