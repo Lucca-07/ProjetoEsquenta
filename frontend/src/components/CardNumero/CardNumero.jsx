@@ -1,9 +1,10 @@
 import "./CardNumero.css"
 
-export default function CardNumero () {
+export default function CardNumero ({numero}) {
     return (
-        <div>
-            
+        <div className="numero-card">
+            {numero}
+            <input type="checkbox" />
         </div>
     )
 }
