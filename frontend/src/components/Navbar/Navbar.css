@@ -1,0 +1,133 @@
+.navbar {
+    width: 300px;
+    height: 100dvh;
+    background: linear-gradient(180deg, #009C3B 0%, #003614 100%);
+    box-shadow: 7px 7px 9px 0px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.navbar-brand {
+    height: 25dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-bottom: #00BA46 1px solid;
+    ;
+}
+
+.navbar-brand-card {
+    background-color: #fff;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    width: 244px;
+    height: 100px;
+    border-radius: 12px;
+    font-size: 20px;
+}
+
+.navbar-brand-card p {
+    width: 50%;
+    text-align: center;
+}
+
+.navbar-links {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 20px;
+}
+
+.navbar-links a {
+    text-decoration: none;
+    color: #fff;
+    font-size: 20px;
+    transition: all 0.3s ease-in-out;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 28px;
+    padding: 10px 20px;
+    border-radius: 8px;
+}
+
+.navbar-links a:hover {
+    transform: scale(1.1);
+    background-color: #009C3B;
+    transform: translateY(-2px);
+}
+
+.navbar-footer {
+    margin-top: auto;
+    width: 100%;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.navbar-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.navbar-profile-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #009C3B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.navbar-profile-image p {
+    color: #fff;
+    font-size: 24px;
+}
+
+.navbar-profile-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.navbar-profile-name {
+    margin: 0;
+    color: #fff;
+}
+
+.navbar-profile-email {
+    margin: 0;
+    font-size: 12px;
+    color: #ffffffa8;
+}
+
+.navbar-logout a {
+    text-decoration: none;
+    color: #fff;
+    font-size: 20px;
+    transition: all 0.3s ease-in-out;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 22px;
+    padding: 10px 20px;
+
+    border-radius: 8px;
+    justify-self: center;
+}
+.navbar-logout a:hover {
+    transform: scale(1.1);
+    background-color: #009C3B;
+    transform: translateY(-2px);
+}
