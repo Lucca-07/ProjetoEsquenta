@@ -1,16 +1,104 @@
 .login-container {
     width: 100%;
     height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     background-color: #f5f5f5;
+    background-image: url('../../assets/background_login.png');
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    
 }
 
-.background-image{
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
+.login-form {
+    margin-left: 60%;
+    width: 420px;
+    height: 512px;
+    padding: 28px;
+    background-color: #f8f8f8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    gap: 24px;
+}
+
+.login-form img {
+    width: 87px;
+}
+
+.input-fields {
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+.input-container {
     width: 100%;
-    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.input-container input {
+    width: 100%;
+    height: 40px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+}
+.input-container label {
+    font-size: 14px;
+    color: #23496B;
+}
+
+.login-options {
+    width: 90%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: -8px;
+}
+
+.login-button {
+    width: 100%;
+    height: 48px;
+    background-color: #23496B;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.login-button:hover {
+    background-color: #1b3a57;
+    transform: scale(1.02);
+    transform: translateY(-2px);
+}
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+.remember-me label {
+    cursor: pointer;
+}
+.remember-me input {
+    width: 16px;
+    height: 16px;
+    accent-color: #23496B;
+    cursor: pointer;
+}
+.forgot-password {
+    font-size: 14px;
+    color: #23496B;
+    text-decoration: none;
+    transition: all 0.3s ease;
 }
