@@ -1,25 +1,24 @@
 import "./CardCodigo.css";
 
 export default function CardCodigo() {
-  return (
-    <div className="card-codigo-container">
-        <div className="card-codigo-title">
-            <h1>Conectar número de <span className="span-verde">WhatsApp</span></h1>
-
-            <div className="card-codigo-codigo">
-                <h3>32TF - 69BC</h3>
+    return (
+        <div className="card-codigo-container">
+            <div className="card-codigo-title">
+                <p className="card-codigo-title-p">Conecte seu número de <span className="green-span">WhatsApp</span></p>
+            </div>
+            <div className="card-codigo-conectar">
+                <p className="card-codigo-conectar-p montserrat-bold">32TF - 69BC</p>
                 <p>Copiar</p>
             </div>
 
             <div className="card-instrucoes">
-                <p>Abra o <span className="span-verde">WhatsApp</span></p>
-                <p>Toque em aparelhos conectados <span className="span-verde">conectar aparelho</span></p>
-                <p>Toque em <span className="span-verde">conectar com numero de celular</span></p>
+                <p>Abra o <span className="green-span">WhatsApp</span></p>
+                <p>Toque em aparelhos conectados <span className="green-span">conectar aparelho</span></p>
+                <p>Toque em <span className="green-span">conectar com numero de celular</span></p>
                 <p>Digite o codigo acima</p>
             </div>
 
-            <p>Voltar</p>
+            <div className="card-voltar">Voltar</div>
         </div>
-    </div>
-  );
+    );
 }
