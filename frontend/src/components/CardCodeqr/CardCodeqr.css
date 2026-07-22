@@ -1,0 +1,70 @@
+.span-verde{
+    color: #34C759;
+}
+
+.card-qrcode-title{
+    color: black;
+    width: 90%;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.card-qrcode-title h1{
+    font-size: 1.25rem;
+    text-align: center;
+}
+
+.card-qrcode{
+    box-shadow: 2px 4px 20px 0px rgba(0, 0, 0, 0.25);
+    border-radius: 10px;
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    border-radius: 35px;
+}
+
+.card-instruct{
+    width: 100%;
+    margin-left: 40px;
+    display: flex;
+    flex-direction: column;
+}
+.card-instruct p{
+    margin: 5px;
+}
+
+.card-qrcode-img{
+    box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+    border-radius: 10px;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #E5E5E5;
+    margin-top: 20px;
+}
+.card-connect{
+    margin-top: 20px;
+    background-color: #23496B;
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 1.25rem;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-connect:hover{
+    background-color: #1B3A57;
+    transform:scale(1.05);
+    transform:translateY(-2px)
+}
