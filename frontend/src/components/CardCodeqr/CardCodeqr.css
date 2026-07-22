@@ -1,0 +1,45 @@
+h1, h3{
+    font-size: 1.5rem;
+}
+.span-verde{
+    color: #34C759;
+}
+
+.card-qrcode-title{
+    background-color: #23496B;
+    color: white;
+    width: 90%;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-qrcode{
+    box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+    border-radius: 10px;
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.card-instruct{
+    width: 100%;
+    text-align: left;
+    margin-left: 20px;
+}
+
+.card-qrcode-img{
+    box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+    border-radius: 10px;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #E5E5E5;
+    margin-top: 20px;
+}
