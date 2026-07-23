@@ -7,7 +7,6 @@
     background-position: center;
     display: flex;
     align-items: center;
-    
 }
 
 .login-form {
@@ -51,6 +50,7 @@
     border-radius: 8px;
     font-size: 14px;
 }
+
 .input-container label {
     font-size: 14px;
     color: #23496B;
@@ -81,21 +81,36 @@
     transform: scale(1.02);
     transform: translateY(-2px);
 }
+
+.login-button:disabled {
+    background-color: #23496B;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.login-button:disabled:hover {
+    background-color: #23496B;
+    transform: none;
+}
+
 .remember-me {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 14px;
 }
+
 .remember-me label {
     cursor: pointer;
 }
+
 .remember-me input {
     width: 16px;
     height: 16px;
     accent-color: #23496B;
     cursor: pointer;
 }
+
 .forgot-password {
     font-size: 14px;
     color: #23496B;

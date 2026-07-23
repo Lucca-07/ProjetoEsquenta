@@ -1,12 +1,14 @@
 import "./Navbar.css"
 import { FaFireAlt, FaWhatsapp } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 
 export default function Navbar() {
     const navbarLinks = [
         { label: "Esquenta", href: "/esquenta", icon: <FaFireAlt /> },
-        { label: "Conectar", href: "/conectar", icon: <FaWhatsapp /> },
+        { label: "Conectar", href: "get/conectar", icon: <FaWhatsapp /> },
     ]
+    const navigate = useNavigate();
 
     return (
         <nav className="navbar">
@@ -18,7 +20,7 @@ export default function Navbar() {
             </div>
             <div className="navbar-links">
                 {navbarLinks.map((link, index) => (
-                    <a key={index} href={link.href} className="navbar-link montserrat-regular-italic">
+                    <a key={index} onClick={() => { link.href[0] == "/" ? navigate(link.href) : null }} className="navbar-link montserrat-regular-italic">
                         {link.icon}
                         <span>{link.label}</span>
                     </a>
@@ -35,7 +37,7 @@ export default function Navbar() {
                     </div>
                 </div>
                 <div className="navbar-logout">
-                    <a href="/logout" className="montserrat-regular">
+                    <a className="montserrat-regular" onClick={() => { navigate("/") }}>
                         <FiLogOut />
                         <span>Sair</span>
                     </a>
