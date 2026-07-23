@@ -26,13 +26,17 @@ export default function Esquenta() {
                 </div>
                 <div className="esquenta-medium-card">
                     <div className="esquenta-medium-left-card">
-                        <p className="esquenta-medium-card-title">Progresso</p>
-                        <div className="esquenta-medium-card-content">
+                        <p className="esquenta-medium-card-title montserrat-medium">Progresso</p>
+                        <div className="esquenta-medium-left-card-content">
                             <input onChange={(e) => setValor(e.target.value)} style={preenchimento} type="range" min="0" max="100" value={valor} className="esquenta-slider" />
+                            <div className="esquenta-slider-info-container">
+                                <span className="esquenta-slider-info">{valor}% Completo</span>
+                                <span className="esquenta-slider-info">2 Horas restantes</span>
+                            </div>
                         </div>
                     </div>
                     <div className="esquenta-medium-right-card">
-                        <p className="esquenta-medium-card-title">Status</p>
+                        <p className="esquenta-medium-card-title">Titulo</p>
                         <div className="esquenta-medium-card-content">
                             <p className="esquenta-status-text">A decidir ainda</p>
                         </div>
