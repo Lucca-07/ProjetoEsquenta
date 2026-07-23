@@ -17,11 +17,11 @@ export default function Esquenta() {
         { id: 2, numero: "11 9932821313", responsavel: "Maria", progresso: 100, tempoRestante: "0 horas", status: "Concluído" },
         { id: 3, numero: "11 9932821313", responsavel: "Pedro", progresso: 75, tempoRestante: "1 hora", status: "Em andamento" },
         { id: 4, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
-        { id: 4, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
-        { id: 4, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
-        { id: 4, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
-        { id: 4, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
-        { id: 4, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
+        { id: 5, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
+        { id: 6, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
+        { id: 7, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
+        { id: 8, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
+        { id: 9, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
     ]
     return (
         <div className="esquenta-container">

@@ -1,12 +1,21 @@
 import { useNavigate } from "react-router-dom"
+import { useState } from "react";
 import "./Login.css"
 export default function Login() {
     const navigate = useNavigate();
+    const [logging, setLogging] = useState(false);
+    function login() {
+        setLogging(true);
+        setTimeout(() => {
+            setLogging(false);
+            navigate("/esquenta");
+        }, 1500);
+    }
     return (
         <div className="login-container">
             <div className="login-form">
                 <img src="../../../assets/simbolo_pl.svg" alt="Simbolo do PL" />
-                <div className="login-text" style={{ textAlign: 'center'}}>
+                <div className="login-text" style={{ textAlign: 'center' }}>
                     <p className="montserrat-semibold" style={{ fontSize: '1.75rem' }}>Bem vindo de volta!</p>
                     <p className="montserrat-regular" style={{ fontSize: '1rem', color: '#666666' }}>Faça login para continuar</p>
                 </div>
@@ -27,7 +36,7 @@ export default function Login() {
                     </div>
                     <a href="#" className="montserrat-regular forgot-password">Esqueceu sua senha?</a>
                 </div>
-                <button className="login-button montserrat-semibold" onClick={() => {navigate("/esquenta")}}>Acessar agora</button>
+                <button className="login-button montserrat-semibold" onClick={() => { login() }} disabled={logging}>{logging ? "Acessando..." : "Acessar agora"}</button>
 
             </div>
         </div>
