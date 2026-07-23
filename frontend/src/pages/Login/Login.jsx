@@ -1,5 +1,7 @@
+import { useNavigate } from "react-router-dom"
 import "./Login.css"
 export default function Login() {
+    const navigate = useNavigate();
     return (
         <div className="login-container">
             <div className="login-form">
@@ -25,7 +27,7 @@ export default function Login() {
                     </div>
                     <a href="#" className="montserrat-regular forgot-password">Esqueceu sua senha?</a>
                 </div>
-                <button className="login-button montserrat-semibold">Acessar agora</button>
+                <button className="login-button montserrat-semibold" onClick={() => {navigate("/esquenta")}}>Acessar agora</button>
 
             </div>
         </div>
