@@ -8,7 +8,7 @@
     background: #FFFFFF;
     border-radius: 35px;
     box-shadow: 0px 4px 25px rgba(0, 0, 0, 0.25);
-    gap:20px
+    gap: 20px
 }
 
 .card-codigo-title-p {
@@ -18,6 +18,10 @@
     text-align: center;
     padding: 1rem;
     border-radius: 12px;
+}
+
+.card-codigo-container[hidden] {
+    display: none;
 }
 
 .green-span {
@@ -81,6 +85,7 @@
     font-size: 1.1rem;
     transition: all 0.3s ease;
 }
+
 .card-voltar:hover {
     background: #1B3A57;
     transform: scale(1.05);

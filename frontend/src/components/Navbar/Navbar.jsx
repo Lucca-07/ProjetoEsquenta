@@ -3,7 +3,7 @@ import { FaFireAlt, FaWhatsapp } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 
-export default function Navbar() {
+export default function Navbar({func}) {
     const navbarLinks = [
         { label: "Esquenta", href: "/esquenta", icon: <FaFireAlt /> },
         { label: "Conectar", href: "get/conectar", icon: <FaWhatsapp /> },
@@ -20,7 +20,7 @@ export default function Navbar() {
             </div>
             <div className="navbar-links">
                 {navbarLinks.map((link, index) => (
-                    <a key={index} onClick={() => { link.href[0] == "/" ? navigate(link.href) : null }} className="navbar-link montserrat-regular-italic">
+                    <a key={index} onClick={() => { link.href[0] == "/" ? navigate(link.href) : func.setHidden(false) }} className="navbar-link montserrat-regular-italic">
                         {link.icon}
                         <span>{link.label}</span>
                     </a>

@@ -1,14 +1,17 @@
 import "./Esquenta.css";
 import Navbar from "../../components/Navbar/Navbar";
 import CardInfo from "../../components/CardInfo/CardInfo";
+import CardCodeqr from "../../components/CardCodeqr/CardCodeqr";
 import { FaFireAlt, FaMobileAlt, FaCheck } from "react-icons/fa";
 import { AiOutlineClose } from "react-icons/ai";
 import { useState } from "react";
+import CardCodigo from "../../components/CardCodigo/CardCodigo";
 
 export default function Esquenta() {
     const [valor, setValor] = useState(40);
-
-    // Calcula a porcentagem do preenchimento dinamicamente
+    const [qrcodeHidden, setQrcodeHidden] = useState(false);
+    const [codeHidden, setCodeHidden] = useState(true);
+    const [hidden, setHidden] = useState(true);
     const preenchimento = {
         background: `linear-gradient(to right, #3e613f 0%, #4CAF50 ${valor}%, #ddd ${valor}%, #ddd 100%)`
     };
@@ -23,10 +26,20 @@ export default function Esquenta() {
         { id: 8, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
         { id: 9, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
     ]
+
+
+
     return (
         <div className="esquenta-container">
+            {!hidden && (
+                <div className="esquenta-codes">
+                    {qrcodeHidden ? null : <CardCodeqr><div className="card-connect montserrat-medium" onClick={() => { setQrcodeHidden(true); setCodeHidden(false) }}>Conectar com Codigo</div></CardCodeqr>}
+                    {codeHidden ? null : <CardCodigo><div className="card-voltar" onClick={() => { setQrcodeHidden(false); setCodeHidden(true) }}>Conectar com QR code</div></CardCodigo>}
+                    <div className="esquenta-codeqr-overlay" onClick={() => setHidden(true)} />
+                </div>
+            )}
             <nav className="navbar">
-                <Navbar />
+                <Navbar func={{ setHidden }} />
             </nav>
             <div className="esquenta-content">
                 <div className="esquenta-card">

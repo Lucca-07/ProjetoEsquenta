@@ -22,11 +22,11 @@ export default function Login() {
                 <div className="input-fields">
                     <div className="input-container">
                         <label htmlFor="email" className="montserrat-semibold">Email</label>
-                        <input type="email" id="email" name="email" placeholder="seuemail@gmail.com" />
+                        <input className="montserrat-medium-italic" type="email" id="email" name="email" placeholder="seuemail@gmail.com" />
                     </div>
                     <div className="input-container">
                         <label htmlFor="password" className="montserrat-semibold">Senha</label>
-                        <input type="password" id="password" name="password" placeholder="Digite sua senha" />
+                        <input className="montserrat-medium-italic" type="password" id="password" name="password" placeholder="Digite sua senha" />
                     </div>
                 </div>
                 <div className="login-options">

@@ -1,8 +1,8 @@
 import "./CardCodigo.css";
 
-export default function CardCodigo() {
+export default function CardCodigo({ children, codeHidden }) {
     return (
-        <div className="card-codigo-container">
+        <div className="card-codigo-container" hidden={codeHidden}>
             <div className="card-codigo-title">
                 <p className="card-codigo-title-p">Conecte seu número de <span className="green-span">WhatsApp</span></p>
             </div>
@@ -18,7 +18,7 @@ export default function CardCodigo() {
                 <p>Digite o codigo acima</p>
             </div>
 
-            <div className="card-voltar">Voltar</div>
+            {children}
         </div>
     );
 }
