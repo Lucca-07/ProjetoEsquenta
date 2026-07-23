@@ -12,14 +12,18 @@
     align-items: center;
 }
 .card-qrcode-title h1{
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     text-align: center;
+}
+.card-codigo-container[hidden] {
+    display: none;
 }
 
 .card-qrcode{
     box-shadow: 2px 4px 20px 0px rgba(0, 0, 0, 0.25);
     border-radius: 10px;
-    width: 400px;
+    background-color: #fff;
+    width: 500px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -34,15 +38,21 @@
     display: flex;
     flex-direction: column;
 }
+
 .card-instruct p{
-    margin: 5px;
+    font-size: 1.25rem;
+    margin-bottom: 5px;
+}
+.card-instruct-p{
+    font-size: 1.25rem;
+    margin-top: 20px;
 }
 
 .card-qrcode-img{
     box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
     border-radius: 10px;
-    width: 200px;
-    height: 200px;
+    width: 300px;
+    height: 300px;
     display: flex;
     justify-content: center;
     align-items: center;
