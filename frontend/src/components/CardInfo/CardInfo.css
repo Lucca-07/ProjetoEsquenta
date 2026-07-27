@@ -25,3 +25,21 @@
     text-align: center;
     color: #000000;
 }
+
+@media (max-width:1366px) {
+    .card-info {
+        width: 200px;
+        height: 75px;
+    }
+    .card-info p {
+        font-size: 16px;
+    }
+    .icone-info {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+    }
+    .card-info p {
+        font-size: 14px;
+    }
+}
