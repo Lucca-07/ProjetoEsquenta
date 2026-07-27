@@ -14,7 +14,6 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-
 }
 
 .esquenta-card {
@@ -28,6 +27,7 @@
 .esquenta-mini-cards {
     display: flex;
     width: 100%;
+    justify-content: space-between;
     gap: 30px;
 }
 
@@ -167,7 +167,7 @@ p.esquenta-medium-card-title {
     width: 20px;
     height: 20px;
     cursor: pointer;
-    accent-color: #4CAF50;
+    accent-color: #4caf50;
 }
 
 .esquenta-bottom-card-header {
@@ -200,28 +200,28 @@ p.esquenta-medium-card-title {
 }
 
 .parar {
-    background: linear-gradient(145deg, #F44336 0%, #8B0000 100%);
+    background: linear-gradient(145deg, #f44336 0%, #8b0000 100%);
 }
 
 .parar:disabled {
-    background: linear-gradient(145deg, #F44336 0%, #8B0000 100%);
+    background: linear-gradient(145deg, #f44336 0%, #8b0000 100%);
     opacity: 0.5;
     cursor: not-allowed;
 }
 
 .parar:disabled:hover {
-    transform: scale(1)
+    transform: scale(1);
 }
 
 .iniciar {
-    background: linear-gradient(145deg, #4CAF50 0%, #375438 100%);
+    background: linear-gradient(145deg, #4caf50 0%, #375438 100%);
 }
 
-.esquenta-codes{
+.esquenta-codes {
     position: absolute;
     z-index: 9999;
 }
-.esquenta-codeqr-overlay{
+.esquenta-codeqr-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -230,4 +230,90 @@ p.esquenta-medium-card-title {
     background-color: rgba(0, 0, 0, 0.25);
     z-index: -1;
     cursor: pointer;
+}
+
+
+
+@media (max-width: 1366px) {
+    .esquenta-content {
+        width: 100%;
+        height: 100%;
+    }
+    .esquenta-medium-left-card{
+        height: 200px;
+    }
+    .esquenta-medium-left-card p{
+        font-size: 28px;
+    }
+    .esquenta-slider-info{
+        font-size: 20px;
+    }
+    .esquenta-medium-left-card-content{
+        height: 100%;
+        justify-content: space-evenly;
+    }
+    .esquenta-medium-left-card-content input[type="range"] {
+        width: 80%;
+        height: 20px;
+    }
+    .esquenta-medium-right-card{
+        height: 200px;
+    }
+    .esquenta-medium-right-card > p{
+        font-size: 28px;
+    }
+    .esquenta-medium-right-card > div> p{
+        font-size: 16px;
+    }
+
+    .esquenta-bottom-card{
+        max-height: 250px;
+    }
+    .esquenta-bottom-card-header{
+        height: 30px;
+    }
+    .esquenta-bottom-card-table-div{
+        max-height: 100%;
+    }
+    .esquenta-bottom-card-table th,
+    .esquenta-bottom-card-table td{
+        padding: 8px;
+    }
+    .esquenta-bottom-card-table th{
+        font-size: 14px;
+    }
+    .esquenta-bottom-card-table td{
+        font-size: 14px;
+    }
+    .esquenta-bottom-card-table-checkbox-input{
+        width: 16px;
+        height: 16px;
+    }
+    .esquenta-bottom-card-title{
+        font-size: 28px;
+    }   
+    .esquenta-bottom-card-buttons{
+        padding-right: 10px;
+    }
+    .esquenta-bottom-card-button{
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+    .esquenta-bottom-card-button:hover{
+        transform: scale(1.05);
+    }
+    .esquenta-bottom-card-button:disabled:hover{
+        transform: scale(1);
+    }
+    .esquenta-bottom-card-table-div::-webkit-scrollbar {
+        width: 6px;
+    }
+    .parar{
+        padding: 10px 20px;
+        font-size: 12px;
+    }
+    .iniciar{
+        padding: 10px 20px;
+        font-size: 12px;
+    }
 }
