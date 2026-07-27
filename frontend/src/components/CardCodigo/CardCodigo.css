@@ -91,3 +91,32 @@
     transform: scale(1.05);
     transform: translateY(-2px);
 }
+
+@media (max-width:1366px) {
+    .card-codigo-container {
+        width: 500px;
+        height: 400px;
+    }
+    .card-codigo-conectar {
+        width: 250px;
+    }
+    .card-codigo-conectar-p {
+        font-size: 1.5rem;
+    }
+    .card-codigo {
+        font-size: 1.5rem;
+    }
+    .card-instrucoes p {
+        font-size: 0.9rem;
+    }
+    .card-codigo-title-p {
+        font-size: 1.5rem;
+    }
+    .card-codigo-conectar {
+        padding: 0.75rem;
+    }
+    .card-voltar {
+        padding: 0.5rem 2rem;
+        font-size: 1rem;
+    }
+}

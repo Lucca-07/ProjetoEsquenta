@@ -78,3 +78,23 @@
     transform:scale(1.05);
     transform:translateY(-2px)
 }
+
+@media (max-width: 1366px) {
+    .card-qrcode{
+        width: 400px;
+        height: 600px;
+    }
+    .card-qrcode-img{
+        width: 250px;
+        height: 250px;
+    }
+    .card-instruct p{
+        font-size: 1rem;
+    }
+    .card-instruct-p{
+        font-size: 1rem;
+    }
+    .card-connect{
+        font-size: 1rem;
+    }
+}

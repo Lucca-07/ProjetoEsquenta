@@ -2,10 +2,10 @@ import "./Esquenta.css";
 import Navbar from "../../components/Navbar/Navbar";
 import CardInfo from "../../components/CardInfo/CardInfo";
 import CardCodeqr from "../../components/CardCodeqr/CardCodeqr";
+import CardCodigo from "../../components/CardCodigo/CardCodigo";
 import { FaFireAlt, FaMobileAlt, FaCheck } from "react-icons/fa";
 import { AiOutlineClose } from "react-icons/ai";
 import { useState } from "react";
-import CardCodigo from "../../components/CardCodigo/CardCodigo";
 
 export default function Esquenta() {
     const [valor, setValor] = useState(40);
@@ -13,7 +13,7 @@ export default function Esquenta() {
     const [codeHidden, setCodeHidden] = useState(true);
     const [hidden, setHidden] = useState(true);
     const preenchimento = {
-        background: `linear-gradient(to right, #3e613f 0%, #4CAF50 ${valor}%, #ddd ${valor}%, #ddd 100%)`
+        background: `linear-gradient(to right, #426143 0%, #4CAF50 ${valor}%, #ddd ${valor}%, #ddd 100%)`
     };
     const MOCK_NUMEROS = [
         { id: 1, numero: "11 9932821313", responsavel: "João", progresso: 50, tempoRestante: "2 horas", status: "Em andamento" },
