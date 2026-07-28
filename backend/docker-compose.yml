@@ -1,0 +1,65 @@
+# ==========================================================================
+# SERVIDOR 1 (KVM8) — API + Postgres + Redis + workers arq + waha-node1
+# (waha-node1 hospeda a MENOR parte dos números; o restante roda no
+# Servidor 2 via docker-compose.server2.yml)
+# ==========================================================================
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: esquenta
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME}
+      POSTGRES_DB: esquenta
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+
+  waha-node1:
+    image: devlikeapro/waha:latest
+    restart: unless-stopped
+    environment:
+      WHATSAPP_API_KEY: ${WAHA_NODE1_API_KEY:-CHANGE_ME}
+    volumes:
+      - waha_node1_sessions:/app/.sessions
+    ports:
+      - "3000:3000"
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+      - waha-node1
+    command: >
+      sh -c "prisma db push --accept-data-loss && uvicorn src.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+
+  worker:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+      - waha-node1
+    command: ["arq", "src.worker.WorkerSettings"]
+
+volumes:
+  postgres_data:
+  redis_data:
+  waha_node1_sessions:

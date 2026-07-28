@@ -1,0 +1,87 @@
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Servidor físico que hospeda instâncias WAHA (ex: kvm8-1, kvm8-2)
+model WahaNode {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  baseUrl   String
+  apiKey    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  numbers Number[]
+}
+
+// Um número/chip de WhatsApp gerenciado pelo sistema
+model Number {
+  id          String   @id @default(uuid())
+  phone       String   @unique
+  sessionName String   @unique
+  nodeId      String
+  node        WahaNode @relation(fields: [nodeId], references: [id])
+
+  status      String   @default("STARTING") // STARTING, SCAN_QR_CODE, WORKING, FAILED, STOPPED
+  active      Boolean  @default(true)
+
+  warmupDay      Int      @default(0)
+  dailyTarget    Int      @default(0)
+  dailySentCount Int      @default(0)
+  lastResetAt    DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pairsAsA         WarmupPair[] @relation("PairNumberA")
+  pairsAsB         WarmupPair[] @relation("PairNumberB")
+  messagesSent     Message[]    @relation("Sender")
+  messagesReceived Message[]    @relation("Receiver")
+  logs             WarmupLog[]
+}
+
+// Par de números que "conversam" entre si para aquecer
+model WarmupPair {
+  id        String   @id @default(uuid())
+  numberAId String
+  numberBId String
+  numberA   Number   @relation("PairNumberA", fields: [numberAId], references: [id])
+  numberB   Number   @relation("PairNumberB", fields: [numberBId], references: [id])
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([numberAId, numberBId])
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  senderId    String
+  receiverId  String
+  sender      Number    @relation("Sender", fields: [senderId], references: [id])
+  receiver    Number    @relation("Receiver", fields: [receiverId], references: [id])
+  content     String
+  status      String    @default("PENDING") // PENDING, SENT, DELIVERED, FAILED
+  waMessageId String?
+  error       String?
+  createdAt   DateTime  @default(now())
+  sentAt      DateTime?
+}
+
+model WarmupLog {
+  id               String   @id @default(uuid())
+  numberId         String
+  number           Number   @relation(fields: [numberId], references: [id])
+  day              Int
+  messagesSent     Int      @default(0)
+  messagesReceived Int      @default(0)
+  event            String   // DAY_ADVANCED, TARGET_REACHED, SEND_ERROR, SESSION_DOWN...
+  detail           String?
+  createdAt        DateTime @default(now())
+}

@@ -1,0 +1,22 @@
+# ==========================================================================
+# SERVIDOR 2 (KVM8) — apenas instância(s) WAHA (o restante dos números)
+# Copie só este arquivo para o Servidor 2 e rode com:
+#   docker compose -f docker-compose.server2.yml up -d
+# Depois, aponte a env WAHA_NODES do Servidor 1 (kvm8-2) para
+# http://IP_DO_SERVIDOR_2:3000
+# ==========================================================================
+version: "3.9"
+
+services:
+  waha-node2:
+    image: devlikeapro/waha:latest
+    restart: unless-stopped
+    environment:
+      WHATSAPP_API_KEY: ${WAHA_NODE2_API_KEY:-CHANGE_ME}
+    volumes:
+      - waha_node2_sessions:/app/.sessions
+    ports:
+      - "3000:3000"
+
+volumes:
+  waha_node2_sessions:
