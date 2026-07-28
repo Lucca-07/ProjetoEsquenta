@@ -1,9 +1,19 @@
 from fastapi import APIRouter
 
 from src.controllers import warmup_controller
-from src.models.warmup_schema import WarmupStatusResponse
+from src.models.warmup_schema import WarmupStatusResponse, WarmupBulkRequest
 
 router = APIRouter(prefix="/warmup", tags=["warmup"])
+
+
+@router.post("/start-bulk")
+async def start_warmup_bulk(payload: WarmupBulkRequest):
+    return await warmup_controller.start_warmup_bulk(payload.number_ids)
+
+
+@router.post("/pause-bulk")
+async def pause_warmup_bulk(payload: WarmupBulkRequest):
+    return await warmup_controller.pause_warmup_bulk(payload.number_ids)
 
 
 @router.post("/{number_id}/start")

@@ -16,6 +16,14 @@ async def start_warmup(number_id: str):
     return await number_repository.get_by_id(number_id)
 
 
+async def start_warmup_bulk(number_ids: list[str]):
+    return [await start_warmup(number_id) for number_id in number_ids]
+
+
+async def pause_warmup_bulk(number_ids: list[str]):
+    return [await pause_warmup(number_id) for number_id in number_ids]
+
+
 async def pause_warmup(number_id: str):
     number = await number_repository.get_by_id(number_id)
     if number is None:

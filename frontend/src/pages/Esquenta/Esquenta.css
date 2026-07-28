@@ -232,6 +232,33 @@ p.esquenta-medium-card-title {
     cursor: pointer;
 }
 
+.esquenta-connect-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px 0;
+}
+
+.esquenta-connect-form input {
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+.esquenta-connect-form button {
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+}
+
+.esquenta-connect-erro {
+    color: #f44336;
+    font-size: 14px;
+    text-align: center;
+}
+
 
 
 @media (max-width: 1366px) {

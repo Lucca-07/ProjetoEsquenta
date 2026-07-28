@@ -5,6 +5,10 @@ class WarmupStartRequest(BaseModel):
     number_id: str
 
 
+class WarmupBulkRequest(BaseModel):
+    number_ids: list[str]
+
+
 class WarmupPairRequest(BaseModel):
     number_a_id: str
     number_b_id: str

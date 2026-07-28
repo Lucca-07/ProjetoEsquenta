@@ -1,7 +1,8 @@
 import "./CardCodeqr.css";
-import { QRCodeSVG } from "qrcode.react";
 
 export default function CardCode({ children, codeHidden, qr }) {
+    const src = qr ? (qr.startsWith("data:") ? qr : `data:image/png;base64,${qr}`) : null;
+
     return (
         <div className="card-qrcode montserrat-medium" hidden={codeHidden}>
             <div className="card-qrcode-title">
@@ -12,7 +13,11 @@ export default function CardCode({ children, codeHidden, qr }) {
             </div>
 
             <div className="card-qrcode-img">
-                <QRCodeSVG value={qr} size={300} level="M" />
+                {src ? (
+                    <img src={src} alt="QR Code de conexão" width={300} height={300} />
+                ) : (
+                    <p>Gerando QR code...</p>
+                )}
             </div>
 
             <p style={{ marginTop: "10px" }}>

@@ -8,7 +8,8 @@ from src.config.index import settings
 from src.config.redis import redis_settings
 from src.db import connect_db, disconnect_db
 from src.middlewares.error_middleware import register_error_handlers
-from src.routes import message_routes, session_routes, warmup_routes
+from src.repositories.phrase_repository import seed_default_phrases
+from src.routes import message_routes, session_routes, warmup_routes, phrase_routes, number_routes
 from src.utils.logger import configure_logging, logger
 
 
@@ -16,6 +17,9 @@ from src.utils.logger import configure_logging, logger
 async def lifespan(app: FastAPI):
     configure_logging()
     await connect_db()
+    seeded = await seed_default_phrases()
+    if seeded:
+        logger.info(f"Banco de frases populado com {seeded} frase(s) padrão")
     app.state.redis_pool = await create_pool(redis_settings)
     logger.info(f"{settings.APP_NAME} iniciado ({settings.APP_ENV})")
     yield
@@ -38,6 +42,8 @@ register_error_handlers(app)
 app.include_router(session_routes.router, prefix=settings.API_PREFIX)
 app.include_router(message_routes.router, prefix=settings.API_PREFIX)
 app.include_router(warmup_routes.router, prefix=settings.API_PREFIX)
+app.include_router(phrase_routes.router, prefix=settings.API_PREFIX)
+app.include_router(number_routes.router, prefix=settings.API_PREFIX)
 
 
 @app.get("/health")

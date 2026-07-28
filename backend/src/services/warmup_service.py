@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from src.config.index import settings
-from src.repositories import number_repository, warmup_log_repository
+from src.repositories import number_repository, warmup_log_repository, phrase_repository
 from src.services import pairing_service
 from src.utils.logger import logger
 from src.utils.random_utils import is_within_working_hours
@@ -59,7 +59,11 @@ async def prepare_next_message(number):
         return None
 
     await pairing_service.ensure_pair(number.id, partner.id)
-    content = random_warmup_message()
+
+    active_phrases = await phrase_repository.list_phrases(active_only=True)
+    templates = [p.text for p in active_phrases] if active_phrases else None
+    content = random_warmup_message(templates)
+
     message = await warmup_log_repository.create_message(
         sender_id=number.id, receiver_id=partner.id, content=content
     )

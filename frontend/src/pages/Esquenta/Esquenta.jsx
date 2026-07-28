@@ -5,37 +5,159 @@ import CardCodeqr from "../../components/CardCodeqr/CardCodeqr";
 import CardCodigo from "../../components/CardCodigo/CardCodigo";
 import { FaFireAlt, FaMobileAlt, FaCheck } from "react-icons/fa";
 import { AiOutlineClose } from "react-icons/ai";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { numbersApi, sessionsApi, warmupApi } from "../../api/numbers";
+
+const NODE_NAME = "kvm8-1"; // ajuste se quiser escolher o nó no próprio formulário
 
 export default function Esquenta() {
-    const [valor, setValor] = useState(40);
-    const [qrcodeHidden, setQrcodeHidden] = useState(false);
-    const [codeHidden, setCodeHidden] = useState(true);
+    const [numeros, setNumeros] = useState([]);
+    const [summary, setSummary] = useState({ connected: 0, warming: 0, completed: 0, not_completed: 0 });
+    const [selecionados, setSelecionados] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [erro, setErro] = useState(null);
+
     const [hidden, setHidden] = useState(true);
+
+    const [telefone, setTelefone] = useState("");
+    const [conectando, setConectando] = useState(false);
+    const [qrValue, setQrValue] = useState(null);
+    const [conectarErro, setConectarErro] = useState(null);
+    const pollRef = useRef(null);
+
+    const progressoMedio = numeros.length
+        ? Math.round(numeros.reduce((acc, n) => acc + n.progresso, 0) / numeros.length)
+        : 0;
     const preenchimento = {
-        background: `linear-gradient(to right, #426143 0%, #4CAF50 ${valor}%, #ddd ${valor}%, #ddd 100%)`
+        background: `linear-gradient(to right, #426143 0%, #4CAF50 ${progressoMedio}%, #ddd ${progressoMedio}%, #ddd 100%)`,
     };
-    const MOCK_NUMEROS = [
-        { id: 1, numero: "11 9932821313", responsavel: "João", progresso: 50, tempoRestante: "2 horas", status: "Em andamento" },
-        { id: 2, numero: "11 9932821313", responsavel: "Maria", progresso: 100, tempoRestante: "0 horas", status: "Concluído" },
-        { id: 3, numero: "11 9932821313", responsavel: "Pedro", progresso: 75, tempoRestante: "1 hora", status: "Em andamento" },
-        { id: 4, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
-        { id: 5, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
-        { id: 6, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
-        { id: 7, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
-        { id: 8, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
-        { id: 9, numero: "11 9932821313", responsavel: "Ana", progresso: 25, tempoRestante: "3 horas", status: "Em andamento" },
-    ]
 
+    async function carregarDados() {
+        try {
+            const [lista, resumo] = await Promise.all([
+                numbersApi.listDashboard(),
+                numbersApi.getSummary(),
+            ]);
+            setNumeros(lista);
+            setSummary(resumo);
+            setErro(null);
+        } catch (e) {
+            setErro(e.message);
+        } finally {
+            setLoading(false);
+        }
+    }
 
+    useEffect(() => {
+        carregarDados();
+        const interval = setInterval(carregarDados, 10000);
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        return () => clearInterval(pollRef.current);
+    }, []);
+
+    function toggleSelecionado(id) {
+        setSelecionados((prev) =>
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
+    }
+
+    async function iniciarEsquenta() {
+        if (!selecionados.length) return;
+        await warmupApi.startBulk(selecionados);
+        setSelecionados([]);
+        carregarDados();
+    }
+
+    async function pararEsquenta() {
+        if (!selecionados.length) return;
+        await warmupApi.pauseBulk(selecionados);
+        setSelecionados([]);
+        carregarDados();
+    }
+
+    async function conectarNumero(e) {
+        e.preventDefault();
+        setConectarErro(null);
+        setConectando(true);
+        setQrValue(null);
+        try {
+            const numero = await sessionsApi.create(telefone.replace(/\D/g, ""), NODE_NAME);
+            pollRef.current = setInterval(async () => {
+                try {
+                    const status = await sessionsApi.getStatus(numero.id);
+                    if (status.qr) setQrValue(status.qr);
+                    if (status.status === "WORKING") {
+                        clearInterval(pollRef.current);
+                        setHidden(true);
+                        setTelefone("");
+                        setQrValue(null);
+                        setConectando(false);
+                        carregarDados();
+                    }
+                } catch (err) {
+                    clearInterval(pollRef.current);
+                    setConectarErro(err.message);
+                    setConectando(false);
+                }
+            }, 3000);
+        } catch (err) {
+            setConectarErro(err.message);
+            setConectando(false);
+        }
+    }
+
+    function fecharModal() {
+        clearInterval(pollRef.current);
+        setHidden(true);
+        setConectando(false);
+        setQrValue(null);
+        setConectarErro(null);
+    }
 
     return (
         <div className="esquenta-container">
             {!hidden && (
                 <div className="esquenta-codes">
-                    {qrcodeHidden ? null : <CardCodeqr><div className="card-connect montserrat-medium" onClick={() => { setQrcodeHidden(true); setCodeHidden(false) }}>Conectar com Codigo</div></CardCodeqr>}
-                    {codeHidden ? null : <CardCodigo><div className="card-voltar" onClick={() => { setQrcodeHidden(false); setCodeHidden(true) }}>Conectar com QR code</div></CardCodigo>}
-                    <div className="esquenta-codeqr-overlay" onClick={() => setHidden(true)} />
+                    {!conectando && (
+                        <CardCodigo codeHidden={false}>
+                            <form className="esquenta-connect-form" onSubmit={conectarNumero}>
+                                <label className="montserrat-medium" htmlFor="telefone-connect">
+                                    Número (com DDI + DDD)
+                                </label>
+                                <input
+                                    id="telefone-connect"
+                                    className="montserrat-medium-italic"
+                                    type="text"
+                                    placeholder="5511999999999"
+                                    value={telefone}
+                                    onChange={(e) => setTelefone(e.target.value)}
+                                    required
+                                />
+                                <button type="submit" className="card-connect montserrat-medium">
+                                    Gerar QR Code
+                                </button>
+                            </form>
+                        </CardCodigo>
+                    )}
+                    {conectando && (
+                        <CardCodeqr codeHidden={false} qr={qrValue}>
+                            {conectarErro && <p className="esquenta-connect-erro">{conectarErro}</p>}
+                            <div
+                                className="card-voltar"
+                                onClick={() => {
+                                    clearInterval(pollRef.current);
+                                    setConectando(false);
+                                    setQrValue(null);
+                                }}
+                            >
+                                Voltar
+                            </div>
+                        </CardCodeqr>
+                    )}
+                    <div className="esquenta-codeqr-overlay" onClick={fecharModal} />
                 </div>
             )}
             <nav className="navbar">
@@ -43,20 +165,21 @@ export default function Esquenta() {
             </nav>
             <div className="esquenta-content">
                 <div className="esquenta-card">
+                    {erro && <p className="esquenta-connect-erro">Não foi possível falar com o backend: {erro}</p>}
                     <div className="esquenta-mini-cards">
-                        <CardInfo icon={<FaMobileAlt />} text="27 Conectados" ></CardInfo>
-                        <CardInfo icon={<FaFireAlt />} text="12 Esquentando" ></CardInfo>
-                        <CardInfo icon={<FaCheck />} text="27 Concluídos" ></CardInfo >
-                        <CardInfo icon={<AiOutlineClose />} text="13 Não concluídos" ></CardInfo>
+                        <CardInfo icon={<FaMobileAlt />} text={`${summary.connected} Conectados`}></CardInfo>
+                        <CardInfo icon={<FaFireAlt />} text={`${summary.warming} Esquentando`}></CardInfo>
+                        <CardInfo icon={<FaCheck />} text={`${summary.completed} Concluídos`}></CardInfo>
+                        <CardInfo icon={<AiOutlineClose />} text={`${summary.not_completed} Não concluídos`}></CardInfo>
                     </div>
                     <div className="esquenta-medium-card">
                         <div className="esquenta-medium-left-card">
                             <p className="esquenta-medium-card-title montserrat-medium">Progresso</p>
                             <div className="esquenta-medium-left-card-content">
-                                <input onChange={(e) => setValor(e.target.value)} style={preenchimento} type="range" min="0" max="100" value={valor} className="esquenta-slider" />
+                                <input readOnly style={preenchimento} type="range" min="0" max="100" value={progressoMedio} className="esquenta-slider" />
                                 <div className="esquenta-slider-info-container">
-                                    <span className="esquenta-slider-info">{valor}% Completo</span>
-                                    <span className="esquenta-slider-info">2 Horas restantes</span>
+                                    <span className="esquenta-slider-info">{progressoMedio}% Completo (média)</span>
+                                    <span className="esquenta-slider-info">{numeros.length} número(s)</span>
                                 </div>
                             </div>
                         </div>
@@ -71,8 +194,20 @@ export default function Esquenta() {
                         <div className="esquenta-bottom-card-header">
                             <p className="esquenta-bottom-card-title montserrat-medium">Números</p>
                             <div className="esquenta-bottom-card-buttons">
-                                <button className="esquenta-bottom-card-button parar montserrat-semibold" disabled>Parar Esquenta</button>
-                                <button className="esquenta-bottom-card-button iniciar montserrat-semibold">Iniciar Esquenta</button>
+                                <button
+                                    className="esquenta-bottom-card-button parar montserrat-semibold"
+                                    disabled={!selecionados.length}
+                                    onClick={pararEsquenta}
+                                >
+                                    Parar Esquenta
+                                </button>
+                                <button
+                                    className="esquenta-bottom-card-button iniciar montserrat-semibold"
+                                    disabled={!selecionados.length}
+                                    onClick={iniciarEsquenta}
+                                >
+                                    Iniciar Esquenta
+                                </button>
                             </div>
                         </div>
                         <div className="esquenta-bottom-card-table-div">
@@ -81,22 +216,37 @@ export default function Esquenta() {
                                     <tr className="esquenta-bottom-card-table-header">
                                         <th className="esquenta-bottom-card-table-header-checkbox">Selecionar</th>
                                         <th className="esquenta-bottom-card-table-header">Número</th>
-                                        <th className="esquenta-bottom-card-table-header">Responsável</th>
                                         <th className="esquenta-bottom-card-table-header">Progresso</th>
                                         <th className="esquenta-bottom-card-table-header">Tempo restante</th>
                                         <th className="esquenta-bottom-card-table-header">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {MOCK_NUMEROS.map((item) => (
+                                    {loading && (
+                                        <tr>
+                                            <td colSpan={5} className="esquenta-bottom-card-table-cell">Carregando...</td>
+                                        </tr>
+                                    )}
+                                    {!loading && numeros.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="esquenta-bottom-card-table-cell">
+                                                Nenhum número cadastrado ainda. Clique em "Conectar" na barra lateral.
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {numeros.map((item) => (
                                         <tr key={item.id} className="esquenta-bottom-card-table-row">
                                             <td className="esquenta-bottom-card-table-cell esquenta-bottom-card-table-checkbox" style={{ width: "10%" }}>
-                                                <input type="checkbox" className="esquenta-bottom-card-table-checkbox-input" id={`checkbox-${item.id}`} />
+                                                <input
+                                                    type="checkbox"
+                                                    className="esquenta-bottom-card-table-checkbox-input"
+                                                    checked={selecionados.includes(item.id)}
+                                                    onChange={() => toggleSelecionado(item.id)}
+                                                />
                                             </td>
                                             <td className="esquenta-bottom-card-table-cell">{item.numero}</td>
-                                            <td className="esquenta-bottom-card-table-cell">{item.responsavel}</td>
                                             <td className="esquenta-bottom-card-table-cell">{item.progresso}%</td>
-                                            <td className="esquenta-bottom-card-table-cell">{item.tempoRestante}</td>
+                                            <td className="esquenta-bottom-card-table-cell">{item.tempo_restante}</td>
                                             <td className="esquenta-bottom-card-table-cell">{item.status}</td>
                                         </tr>
                                     ))}

@@ -31,5 +31,5 @@ DEFAULT_WARMUP_TEMPLATES = [
 
 
 def random_warmup_message(templates: list[str] | None = None) -> str:
-    pool = templates or DEFAULT_WARMUP_TEMPLATES
+    pool = templates if templates else DEFAULT_WARMUP_TEMPLATES
     return parse_spintax(random.choice(pool))

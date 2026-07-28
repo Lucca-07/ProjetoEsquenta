@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Request
 
-from src.repositories import number_repository, warmup_log_repository
+from src.repositories import number_repository, warmup_log_repository, phrase_repository
 from src.utils.spintax import random_warmup_message
 
 
@@ -10,7 +10,11 @@ async def send_message(request: Request, sender_id: str, receiver_id: str, conte
     if sender is None or receiver is None:
         raise HTTPException(status_code=404, detail="Remetente ou destinatário não encontrado")
 
-    text = content or random_warmup_message()
+    text = content
+    if not text:
+        active_phrases = await phrase_repository.list_phrases(active_only=True)
+        templates = [p.text for p in active_phrases] if active_phrases else None
+        text = random_warmup_message(templates)
     message = await warmup_log_repository.create_message(sender_id, receiver_id, text)
 
     redis_pool = request.app.state.redis_pool

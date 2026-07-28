@@ -74,6 +74,16 @@ model Message {
   sentAt      DateTime?
 }
 
+// Banco de frases usadas para gerar as mensagens de aquecimento (spintax)
+model WarmupPhrase {
+  id        String   @id @default(uuid())
+  text      String   // texto em spintax, ex: "{Oi|Olá}, tudo {bem|certo}?"
+  category  String   @default("geral") // geral, saudacao, despedida, confirmacao...
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model WarmupLog {
   id               String   @id @default(uuid())
   numberId         String
