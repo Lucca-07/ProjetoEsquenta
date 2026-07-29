@@ -6,6 +6,58 @@
   padding: 0;
 }
 
+:root {
+  font-family: "Montserrat", sans-serif;
+  color: #17251c;
+  background: #f3f7f4;
+  font-synthesis: none;
+  --green-950: #073d1c;
+  --green-900: #075326;
+  --green-700: #16813e;
+  --green-500: #34a853;
+  --green-100: #e8f6ec;
+  --blue-800: #23496b;
+  --blue-900: #183750;
+  --surface: #ffffff;
+  --surface-soft: #f7faf8;
+  --text: #17251c;
+  --muted: #68766d;
+  --border: #dfe8e2;
+  --danger: #c83e3e;
+  --shadow-sm: 0 8px 24px rgba(17, 61, 32, 0.07);
+  --shadow-md: 0 18px 45px rgba(17, 61, 32, 0.11);
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background: #f3f7f4;
+  color: var(--text);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgba(52, 168, 83, 0.28);
+  outline-offset: 2px;
+}
+
 .montserrat-thin {
   font-family: "Montserrat", sans-serif;
   font-optical-sizing: auto;

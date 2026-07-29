@@ -13,6 +13,10 @@ class WarmupBulkRequest(BaseModel):
     duration_hours: int = Field(..., ge=1, le=720)
 
 
+class WarmupSelectionRequest(BaseModel):
+    number_ids: list[str]
+
+
 class WarmupPairRequest(BaseModel):
     number_a_id: str
     number_b_id: str

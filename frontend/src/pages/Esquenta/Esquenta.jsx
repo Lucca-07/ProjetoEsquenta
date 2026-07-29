@@ -4,12 +4,34 @@ import CardInfo from "../../components/CardInfo/CardInfo";
 import CardCodeqr from "../../components/CardCodeqr/CardCodeqr";
 import CardCodigo from "../../components/CardCodigo/CardCodigo";
 import ConfirmWarmupModal from "../../components/ConfirmWarmupModal/ConfirmWarmupModal";
-import { FaFireAlt, FaMobileAlt, FaCheck } from "react-icons/fa";
+import { FaFireAlt, FaMobileAlt, FaCheck, FaSearch } from "react-icons/fa";
 import { AiOutlineClose } from "react-icons/ai";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { numbersApi, sessionsApi, warmupApi } from "../../api/numbers";
 
 const NODE_NAME = "kvm8-1"; // ajuste se quiser escolher o nó no próprio formulário
+
+function statusClassName(status) {
+    const classes = {
+        "Em andamento": "warming",
+        Concluído: "completed",
+        "Sem ação": "idle",
+        Pausado: "paused",
+        Conectando: "connecting",
+        Desconectado: "disconnected",
+        Falhou: "failed",
+    };
+
+    return classes[status] || "idle";
+}
+
+function remainingTimeValue(label) {
+    if (!label || label === "Concluído") return 0;
+    const days = Number(label.match(/(\d+)d/)?.[1] || 0);
+    const hours = Number(label.match(/(\d+)h/)?.[1] || 0);
+    const minutes = Number(label.match(/(\d+)min/)?.[1] || 0);
+    return days * 86400 + hours * 3600 + minutes * 60;
+}
 
 export default function Esquenta() {
     const [numeros, setNumeros] = useState([]);
@@ -20,7 +42,14 @@ export default function Esquenta() {
         not_completed: 0,
     });
     const [selecionados, setSelecionados] = useState([]);
+    const [buscaNumero, setBuscaNumero] = useState("");
+    const [ordenacao, setOrdenacao] = useState({
+        key: "numero",
+        direction: "asc",
+    });
     const [loading, setLoading] = useState(true);
+    const [parando, setParando] = useState(false);
+    const [desconectando, setDesconectando] = useState(false);
     const [erro, setErro] = useState(null);
 
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -42,6 +71,68 @@ export default function Esquenta() {
         background: `linear-gradient(to right, #426143 0%, #4CAF50 ${progressoMedio}%, #ddd ${progressoMedio}%, #ddd 100%)`,
     };
 
+    const numerosOrdenados = useMemo(() => {
+        const termo = buscaNumero.trim().toLowerCase();
+        const termoNumerico = termo.replace(/\D/g, "");
+        const numerosFiltrados = numeros.filter((item) => {
+            if (!termo) return true;
+            const numero = String(item.numero || "").toLowerCase();
+            const numeroNumerico = numero.replace(/\D/g, "");
+            return (
+                numero.includes(termo) ||
+                (termoNumerico && numeroNumerico.includes(termoNumerico))
+            );
+        });
+
+        const valueFor = (item) => {
+            if (ordenacao.key === "progresso") return item.progresso;
+            if (ordenacao.key === "tempo_restante") {
+                return remainingTimeValue(item.tempo_restante);
+            }
+            return item[ordenacao.key] || "";
+        };
+
+        return numerosFiltrados.sort((first, second) => {
+            const firstValue = valueFor(first);
+            const secondValue = valueFor(second);
+            const comparison =
+                typeof firstValue === "number"
+                    ? firstValue - secondValue
+                    : String(firstValue).localeCompare(String(secondValue), "pt-BR", {
+                          numeric: true,
+                      });
+            return ordenacao.direction === "asc" ? comparison : -comparison;
+        });
+    }, [numeros, ordenacao, buscaNumero]);
+
+    const todosSelecionados =
+        numerosOrdenados.length > 0 &&
+        numerosOrdenados.every((item) => selecionados.includes(item.id));
+
+    function ordenarPor(key) {
+        setOrdenacao((current) => ({
+            key,
+            direction:
+                current.key === key && current.direction === "asc"
+                    ? "desc"
+                    : "asc",
+        }));
+    }
+
+    function indicadorOrdenacao(key) {
+        if (ordenacao.key !== key) return "↕";
+        return ordenacao.direction === "asc" ? "↑" : "↓";
+    }
+
+    function toggleTodos() {
+        const idsVisiveis = numerosOrdenados.map((item) => item.id);
+        setSelecionados((current) =>
+            todosSelecionados
+                ? current.filter((id) => !idsVisiveis.includes(id))
+                : [...new Set([...current, ...idsVisiveis])],
+        );
+    }
+
     async function carregarDados() {
         try {
             const [lista, resumo] = await Promise.all([
@@ -59,9 +150,12 @@ export default function Esquenta() {
     }
 
     useEffect(() => {
-        carregarDados();
+        const initialLoad = setTimeout(carregarDados, 0);
         const interval = setInterval(carregarDados, 10000);
-        return () => clearInterval(interval);
+        return () => {
+            clearTimeout(initialLoad);
+            clearInterval(interval);
+        };
     }, []);
 
     useEffect(() => {
@@ -100,13 +194,48 @@ export default function Esquenta() {
 
     async function pararEsquenta() {
         if (!selecionados.length) return;
+
+        setParando(true);
+        setErro(null);
+
         try {
-            await warmupApi.pauseBulk(selecionados);
+            await warmupApi.stopBulk(selecionados);
+            setSelecionados([]);
+            await carregarDados();
         } catch (err) {
             console.error(err);
+            setErro(`Não foi possível parar o esquenta: ${err.message}`);
+        } finally {
+            setParando(false);
         }
-        setSelecionados([]);
-        carregarDados();
+    }
+
+    async function desconectarNumeros() {
+        if (!selecionados.length) return;
+
+        const confirmado = window.confirm(
+            "Desconectar e remover permanentemente os números selecionados? " +
+                "O histórico de mensagens e aquecimento também será excluído.",
+        );
+        if (!confirmado) return;
+
+        setDesconectando(true);
+        setErro(null);
+
+        try {
+            await Promise.all(
+                selecionados.map((numberId) =>
+                    sessionsApi.stop(numberId),
+                ),
+            );
+            setSelecionados([]);
+            await carregarDados();
+        } catch (err) {
+            console.error(err);
+            setErro(`Não foi possível desconectar: ${err.message}`);
+        } finally {
+            setDesconectando(false);
+        }
     }
 
     async function conectarNumero(e) {
@@ -122,13 +251,10 @@ export default function Esquenta() {
             pollRef.current = setInterval(async () => {
                 try {
                     const status = await sessionsApi.getStatus(numero.id);
-                    console.log("STATUS:", status);
 
                     if (status.qr) {
-                        console.log("QR recebido");
                         setQrValue(status.qr);
                     }
-                    if (status.qr) setQrValue(status.qr);
                     if (status.status === "WORKING") {
                         clearInterval(pollRef.current);
                         setHidden(true);
@@ -136,6 +262,16 @@ export default function Esquenta() {
                         setQrValue(null);
                         setConectando(false);
                         carregarDados();
+                    }
+                    if (
+                        status.status === "STOPPED" ||
+                        status.status === "FAILED"
+                    ) {
+                        clearInterval(pollRef.current);
+                        setConectarErro(
+                            "Não foi possível iniciar a sessão. Tente novamente.",
+                        );
+                        setConectando(false);
                     }
                 } catch (err) {
                     console.error(err);
@@ -242,11 +378,25 @@ export default function Esquenta() {
                     />
                 </div>
             )}
-            <nav className="navbar">
-                <Navbar func={{ setHidden }} />
-            </nav>
+            <Navbar func={{ setHidden }} />
             <div className="esquenta-content">
                 <div className="esquenta-card">
+                    <header className="esquenta-page-header">
+                        <div>
+                            <span className="esquenta-page-eyebrow">
+                                Painel de aquecimento
+                            </span>
+                            <h1>Visão geral</h1>
+                            <p>
+                                Acompanhe seus números e controle os ciclos de
+                                aquecimento.
+                            </p>
+                        </div>
+                        <div className="esquenta-live-status">
+                            <span />
+                            Sistema ativo
+                        </div>
+                    </header>
                     {erro && (
                         <p className="esquenta-connect-erro">
                             Não foi possível falar com o backend: {erro}
@@ -297,11 +447,13 @@ export default function Esquenta() {
                         </div>
                         <div className="esquenta-medium-right-card">
                             <p className="esquenta-medium-card-title montserrat-medium">
-                                Título
+                                Status geral
                             </p>
                             <div className="esquenta-medium-card-content">
                                 <p className="esquenta-status-text">
-                                    A decidir ainda
+                                    {summary.warming > 0
+                                        ? `${summary.warming} número(s) em aquecimento`
+                                        : "Nenhum aquecimento em andamento"}
                                 </p>
                             </div>
                         </div>
@@ -311,14 +463,52 @@ export default function Esquenta() {
                             <p className="esquenta-bottom-card-title montserrat-medium">
                                 Números
                             </p>
+                            <label className="esquenta-number-search">
+                                <FaSearch aria-hidden="true" />
+                                <input
+                                    type="search"
+                                    value={buscaNumero}
+                                    onChange={(event) =>
+                                        setBuscaNumero(event.target.value)
+                                    }
+                                    placeholder="Pesquisar número..."
+                                    aria-label="Pesquisar números"
+                                />
+                                {buscaNumero && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setBuscaNumero("")}
+                                        aria-label="Limpar pesquisa"
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </label>
                             <div className="esquenta-bottom-card-buttons">
                                 <button
                                     type="button"
+                                    className="esquenta-bottom-card-button desconectar montserrat-semibold"
+                                    disabled={
+                                        !selecionados.length ||
+                                        desconectando
+                                    }
+                                    onClick={desconectarNumeros}
+                                >
+                                    {desconectando
+                                        ? "Desconectando..."
+                                        : "Desconectar"}
+                                </button>
+                                <button
+                                    type="button"
                                     className="esquenta-bottom-card-button parar montserrat-semibold"
-                                    disabled={!selecionados.length}
+                                    disabled={
+                                        !selecionados.length || parando
+                                    }
                                     onClick={pararEsquenta}
                                 >
-                                    Parar Esquenta
+                                    {parando
+                                        ? "Parando..."
+                                        : "Parar Esquenta"}
                                 </button>
 
                                 <button
@@ -338,19 +528,63 @@ export default function Esquenta() {
                                 <thead>
                                     <tr className="esquenta-bottom-card-table-header">
                                         <th className="esquenta-bottom-card-table-header-checkbox">
-                                            Selecionar
+                                            <label className="esquenta-select-all">
+                                                <input
+                                                    type="checkbox"
+                                                    className="esquenta-bottom-card-table-checkbox-input"
+                                                    checked={todosSelecionados}
+                                                    onChange={toggleTodos}
+                                                    disabled={!numerosOrdenados.length}
+                                                    aria-label="Selecionar todos os números"
+                                                />
+                                                <span>Selecionar</span>
+                                            </label>
                                         </th>
                                         <th className="esquenta-bottom-card-table-header">
-                                            Número
+                                            <button
+                                                type="button"
+                                                className="esquenta-sort-button"
+                                                onClick={() => ordenarPor("numero")}
+                                            >
+                                                Número
+                                                <span>{indicadorOrdenacao("numero")}</span>
+                                            </button>
                                         </th>
                                         <th className="esquenta-bottom-card-table-header">
-                                            Progresso
+                                            <button
+                                                type="button"
+                                                className="esquenta-sort-button"
+                                                onClick={() => ordenarPor("progresso")}
+                                            >
+                                                Progresso
+                                                <span>{indicadorOrdenacao("progresso")}</span>
+                                            </button>
                                         </th>
                                         <th className="esquenta-bottom-card-table-header">
-                                            Tempo restante
+                                            <button
+                                                type="button"
+                                                className="esquenta-sort-button"
+                                                onClick={() =>
+                                                    ordenarPor("tempo_restante")
+                                                }
+                                            >
+                                                Tempo restante
+                                                <span>
+                                                    {indicadorOrdenacao(
+                                                        "tempo_restante",
+                                                    )}
+                                                </span>
+                                            </button>
                                         </th>
                                         <th className="esquenta-bottom-card-table-header">
-                                            Status
+                                            <button
+                                                type="button"
+                                                className="esquenta-sort-button"
+                                                onClick={() => ordenarPor("status")}
+                                            >
+                                                Status
+                                                <span>{indicadorOrdenacao("status")}</span>
+                                            </button>
                                         </th>
                                     </tr>
                                 </thead>
@@ -377,10 +611,23 @@ export default function Esquenta() {
                                             </td>
                                         </tr>
                                     )}
-                                    {numeros.map((item) => (
+                                    {!loading &&
+                                        numeros.length > 0 &&
+                                        numerosOrdenados.length === 0 && (
+                                            <tr>
+                                                <td
+                                                    colSpan={5}
+                                                    className="esquenta-bottom-card-table-cell esquenta-table-empty"
+                                                >
+                                                    Nenhum número encontrado
+                                                    para “{buscaNumero}”.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    {numerosOrdenados.map((item) => (
                                         <tr
                                             key={item.id}
-                                            className="esquenta-bottom-card-table-row"
+                                            className={`esquenta-bottom-card-table-row status-row-${statusClassName(item.status)}`}
                                         >
                                             <td
                                                 className="esquenta-bottom-card-table-cell esquenta-bottom-card-table-checkbox"
@@ -409,7 +656,15 @@ export default function Esquenta() {
                                                 {item.tempo_restante}
                                             </td>
                                             <td className="esquenta-bottom-card-table-cell">
-                                                {item.status}
+                                                <span
+                                                    className={`esquenta-status-badge status-${statusClassName(item.status)}`}
+                                                >
+                                                    <span
+                                                        className="esquenta-status-dot"
+                                                        aria-hidden="true"
+                                                    />
+                                                    {item.status}
+                                                </span>
                                             </td>
                                         </tr>
                                     ))}

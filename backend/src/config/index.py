@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     APP_NAME: str = "esquenta-backend"
     LOG_LEVEL: str = "INFO"
     API_PREFIX: str = "/api"
+    AUTH_SECRET: str = "change-this-auth-secret"
+    AUTH_TOKEN_HOURS: int = 12
+    ADMIN_NAME: str = "Administrador"
+    ADMIN_EMAIL: str = "admin@esquenta.local"
+    ADMIN_PASSWORD: str = "Admin@123"
 
     # Banco de dados
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/esquenta"

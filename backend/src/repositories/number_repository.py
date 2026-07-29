@@ -41,6 +41,50 @@ async def set_active(number_id: str, active: bool) -> Number | None:
     return await db.number.update(where={"id": number_id}, data={"active": active})
 
 
+async def stop_warmup(number_id: str) -> Number | None:
+    return await db.number.update(
+        where={"id": number_id},
+        data={
+            "active": False,
+            "warmupStartedAt": None,
+            "warmupFinishAt": None,
+        },
+    )
+
+
+async def delete_number_with_history(number_id: str) -> Number | None:
+    number = await get_by_id(number_id)
+    if number is None:
+        return None
+
+    async with db.tx() as transaction:
+        await transaction.message.delete_many(
+            where={
+                "OR": [
+                    {"senderId": number_id},
+                    {"receiverId": number_id},
+                ]
+            }
+        )
+        await transaction.warmuplog.delete_many(where={"numberId": number_id})
+        await transaction.warmuppair.delete_many(
+            where={
+                "OR": [
+                    {"numberAId": number_id},
+                    {"numberBId": number_id},
+                ]
+            }
+        )
+        return await transaction.number.delete(where={"id": number_id})
+
+
+async def mark_reconnecting(number_id: str) -> Number | None:
+    return await db.number.update(
+        where={"id": number_id},
+        data={"status": "STARTING", "active": False},
+    )
+
+
 async def update_warmup_progress(
     number_id: str,
     warmup_day: int | None = None,

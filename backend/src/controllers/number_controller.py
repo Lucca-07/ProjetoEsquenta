@@ -28,7 +28,7 @@ def _progress_percent(number) -> int:
 
 def _remaining_label(number) -> str:
     if number.warmupFinishAt is None:
-        return "-"
+        return "0min"
 
     segundos_restantes = (
         number.warmupFinishAt - _now_utc()
@@ -60,6 +60,12 @@ def _is_completed(number) -> bool:
 def _status_label(number) -> str:
     if number.status == "FAILED":
         return "Falhou"
+
+    if number.status == "STOPPED":
+        return "Desconectado"
+
+    if number.warmupStartedAt is None or number.warmupFinishAt is None:
+        return "Sem ação"
 
     if _is_completed(number):
         return "Concluído"

@@ -25,6 +25,11 @@ export const warmupApi = {
             number_ids: numberIds,
         }),
 
+    stopBulk: (numberIds) =>
+        api.post("/warmup/stop-bulk", {
+            number_ids: numberIds,
+        }),
+
     getStatus: (numberId) => api.get(`/warmup/${numberId}/status`),
 
     getLogs: (numberId) => api.get(`/warmup/${numberId}/logs`),

@@ -1,13 +1,24 @@
 import "./ConfirmWarmupModal.css";
 import { useState } from "react";
 
+const OPCOES_DURACAO = [
+    { horas: 6, label: "6h" },
+    { horas: 12, label: "12h" },
+    { horas: 24, label: "24h" },
+    { horas: 48, label: "2 dias" },
+    { horas: 72, label: "3 dias" },
+    { horas: 120, label: "5 dias" },
+    { horas: 168, label: "1 semana" },
+    { horas: 336, label: "2 semanas" },
+];
+
 export default function ConfirmWarmupModal({
     open,
     onClose,
     onConfirm,
     numeros,
 }) {
-    const [intervalo, setIntervalo] = useState(90);
+    const [intervalo, setIntervalo] = useState(240);
     const [duracao, setDuracao] = useState(24);
 
     if (!open) return null;
@@ -60,37 +71,18 @@ export default function ConfirmWarmupModal({
                     <p>Duração</p>
 
                     <div className="warmup-buttons">
-                        <button
-                            type="button"
-                            className={duracao === 6 ? "active" : ""}
-                            onClick={() => setDuracao(6)}
-                        >
-                            6h
-                        </button>
-
-                        <button
-                            type="button"
-                            className={duracao === 12 ? "active" : ""}
-                            onClick={() => setDuracao(12)}
-                        >
-                            12h
-                        </button>
-
-                        <button
-                            type="button"
-                            className={duracao === 24 ? "active" : ""}
-                            onClick={() => setDuracao(24)}
-                        >
-                            24h
-                        </button>
-
-                        <button
-                            type="button"
-                            className={duracao === 48 ? "active" : ""}
-                            onClick={() => setDuracao(48)}
-                        >
-                            48h
-                        </button>
+                        {OPCOES_DURACAO.map((opcao) => (
+                            <button
+                                key={opcao.horas}
+                                type="button"
+                                className={
+                                    duracao === opcao.horas ? "active" : ""
+                                }
+                                onClick={() => setDuracao(opcao.horas)}
+                            >
+                                {opcao.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
 

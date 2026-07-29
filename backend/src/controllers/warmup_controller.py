@@ -5,12 +5,13 @@ from fastapi import HTTPException
 from src.models.warmup_schema import WarmupBulkRequest
 from src.repositories import number_repository, warmup_log_repository
 from src.services.warmup_service import calculate_daily_target
+from src.utils.logger import logger
 
 
 async def start_warmup(
     number_id: str,
-    interval_seconds: int,
-    duration_hours: int,
+    interval_seconds: int = 240,
+    duration_hours: int = 24,
 ):
     number = await number_repository.get_by_id(number_id)
 
@@ -67,12 +68,38 @@ async def pause_warmup_bulk(number_ids: list[str]):
     return [await pause_warmup(number_id) for number_id in number_ids]
 
 
+async def stop_warmup_bulk(number_ids: list[str]):
+    return [await stop_warmup(number_id) for number_id in number_ids]
+
+
 async def pause_warmup(number_id: str):
     number = await number_repository.get_by_id(number_id)
     if number is None:
         raise HTTPException(status_code=404, detail="Número não encontrado")
     await warmup_log_repository.add_log(number_id, number.warmupDay, "WARMUP_PAUSED")
     return await number_repository.set_active(number_id, False)
+
+
+async def stop_warmup(number_id: str):
+    number = await number_repository.get_by_id(number_id)
+    if number is None:
+        raise HTTPException(status_code=404, detail="Número não encontrado")
+
+    stopped_number = await number_repository.stop_warmup(number_id)
+
+    try:
+        await warmup_log_repository.add_log(
+            number_id,
+            number.warmupDay,
+            "WARMUP_STOPPED",
+        )
+    except Exception:
+        logger.exception(
+            "[warmup] Aquecimento parado, mas não foi possível registrar o log "
+            f"do número {number_id}"
+        )
+
+    return stopped_number
 
 
 async def get_status(number_id: str):

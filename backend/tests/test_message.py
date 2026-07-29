@@ -1,6 +1,9 @@
 from src.utils.spintax import parse_spintax, random_warmup_message
 from src.utils.random_utils import random_delay_seconds, is_within_working_hours
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
+
+from src.jobs.message_job import _warmup_is_active
 
 
 def test_spintax_resolves_single_option():
@@ -32,3 +35,24 @@ def test_working_hours_check():
     outside = datetime(2026, 1, 1, 3, 0)
     assert is_within_working_hours(inside) is True
     assert is_within_working_hours(outside) is False
+
+
+def test_stopped_warmup_is_not_active_for_queued_message():
+    number = SimpleNamespace(
+        active=False,
+        warmupStartedAt=None,
+        warmupFinishAt=None,
+    )
+
+    assert _warmup_is_active(number) is False
+
+
+def test_running_warmup_is_active_for_queued_message():
+    now = datetime.now(timezone.utc)
+    number = SimpleNamespace(
+        active=True,
+        warmupStartedAt=now - timedelta(minutes=1),
+        warmupFinishAt=now + timedelta(hours=1),
+    )
+
+    assert _warmup_is_active(number) is True

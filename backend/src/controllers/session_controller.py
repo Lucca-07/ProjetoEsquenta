@@ -16,11 +16,38 @@ async def create_session(phone: str, node_name: str):
     session_name = f"esquenta-{phone}"
     existing = await number_repository.get_by_session_name(session_name)
     if existing:
-        raise HTTPException(status_code=409, detail="Já existe uma sessão para esse número")
+        if existing.status != "STOPPED":
+            raise HTTPException(status_code=409, detail="Já existe uma sessão para esse número")
+
+        waha = WahaService(
+            base_url=existing.node.baseUrl,
+            api_key=existing.node.apiKey,
+        )
+        try:
+            await waha.restart_existing_session(session_name)
+        except WahaError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Falha ao reconectar sessão no WAHA: {exc}",
+            ) from exc
+        finally:
+            await waha.close()
+
+        logger.info(f"[session] reconectando sessão {session_name}")
+        return await number_repository.mark_reconnecting(existing.id)
 
     waha = WahaService(base_url=node.baseUrl, api_key=node.apiKey)
     try:
-        await waha.start_session(session_name)
+        try:
+            await waha.start_session(session_name)
+        except WahaError as exc:
+            if exc.status_code != 422 or "already exists" not in str(exc):
+                raise
+
+            logger.info(
+                f"[session] recuperando sessão existente {session_name} no WAHA"
+            )
+            await waha.restart_existing_session(session_name)
     except WahaError as exc:
         raise HTTPException(status_code=502, detail=f"Falha ao iniciar sessão no WAHA: {exc}") from exc
     finally:
@@ -67,4 +94,8 @@ async def stop_session(number_id: str):
     finally:
         await waha.close()
 
-    return await number_repository.set_active(number_id, False)
+    deleted_number = await number_repository.delete_number_with_history(number_id)
+    return {
+        "deleted": deleted_number is not None,
+        "number_id": number_id,
+    }

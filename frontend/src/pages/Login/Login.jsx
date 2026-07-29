@@ -1,44 +1,95 @@
-import { useNavigate } from "react-router-dom"
 import { useState } from "react";
-import "./Login.css"
+import { Navigate, useNavigate } from "react-router-dom";
+import { authApi, saveSession } from "../../api/auth";
+import "./Login.css";
+
 export default function Login() {
     const navigate = useNavigate();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [logging, setLogging] = useState(false);
-    function login() {
-        setLogging(true);
-        setTimeout(() => {
-            setLogging(false);
-            navigate("/esquenta");
-        }, 1500);
+    const [erro, setErro] = useState("");
+
+    if (localStorage.getItem("auth_token")) {
+        return <Navigate to="/esquenta" replace />;
     }
+
+    async function login(event) {
+        event.preventDefault();
+        setLogging(true);
+        setErro("");
+        try {
+            const session = await authApi.login(email, password);
+            saveSession(session);
+            navigate("/esquenta", { replace: true });
+        } catch (error) {
+            setErro(error.message);
+        } finally {
+            setLogging(false);
+        }
+    }
+
     return (
         <div className="login-container">
-            <div className="login-form">
-                <img src="../../../assets/simbolo_pl.svg" alt="Simbolo do PL" />
-                <div className="login-text" style={{ textAlign: 'center' }}>
-                    <p className="montserrat-semibold" style={{ fontSize: '1.75rem' }}>Bem vindo de volta!</p>
-                    <p className="montserrat-regular" style={{ fontSize: '1rem', color: '#666666' }}>Faça login para continuar</p>
+            <form className="login-form" onSubmit={login}>
+                <img src="../../../assets/simbolo_pl.svg" alt="Símbolo do PL" />
+                <div className="login-text" style={{ textAlign: "center" }}>
+                    <p
+                        className="montserrat-semibold"
+                        style={{ fontSize: "1.75rem" }}
+                    >
+                        Bem-vindo de volta!
+                    </p>
+                    <p
+                        className="montserrat-regular"
+                        style={{ fontSize: "1rem", color: "#666666" }}
+                    >
+                        Faça login para continuar
+                    </p>
                 </div>
+                {erro && <p className="login-error">{erro}</p>}
                 <div className="input-fields">
                     <div className="input-container">
-                        <label htmlFor="email" className="montserrat-semibold">Email</label>
-                        <input className="montserrat-medium-italic" type="email" id="email" name="email" placeholder="seuemail@gmail.com" />
+                        <label htmlFor="email" className="montserrat-semibold">
+                            Email
+                        </label>
+                        <input
+                            type="email"
+                            id="email"
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
+                            placeholder="seuemail@gmail.com"
+                            autoComplete="email"
+                            required
+                        />
                     </div>
                     <div className="input-container">
-                        <label htmlFor="password" className="montserrat-semibold">Senha</label>
-                        <input className="montserrat-medium-italic" type="password" id="password" name="password" placeholder="Digite sua senha" />
+                        <label
+                            htmlFor="password"
+                            className="montserrat-semibold"
+                        >
+                            Senha
+                        </label>
+                        <input
+                            type="password"
+                            id="password"
+                            value={password}
+                            onChange={(event) => setPassword(event.target.value)}
+                            placeholder="Digite sua senha"
+                            autoComplete="current-password"
+                            minLength={8}
+                            required
+                        />
                     </div>
                 </div>
-                <div className="login-options">
-                    <div className="remember-me">
-                        <input type="checkbox" id="remember" name="remember" />
-                        <label htmlFor="remember" className="montserrat-regular">Lembrar de mim</label>
-                    </div>
-                    <a href="#" className="montserrat-regular forgot-password">Esqueceu sua senha?</a>
-                </div>
-                <button className="login-button montserrat-semibold" onClick={() => { login() }} disabled={logging}>{logging ? "Acessando..." : "Acessar agora"}</button>
-
-            </div>
+                <button
+                    type="submit"
+                    className="login-button montserrat-semibold"
+                    disabled={logging}
+                >
+                    {logging ? "Acessando..." : "Acessar agora"}
+                </button>
+            </form>
         </div>
-    )
+    );
 }

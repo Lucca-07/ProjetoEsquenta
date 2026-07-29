@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 from arq import create_pool
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config.index import settings
@@ -9,7 +9,16 @@ from src.config.redis import redis_settings
 from src.db import connect_db, disconnect_db
 from src.middlewares.error_middleware import register_error_handlers
 from src.repositories.phrase_repository import seed_default_phrases
-from src.routes import message_routes, session_routes, warmup_routes, phrase_routes, number_routes
+from src.routes import (
+    auth_routes,
+    message_routes,
+    number_routes,
+    phrase_routes,
+    session_routes,
+    warmup_routes,
+)
+from src.controllers.auth_controller import ensure_initial_admin
+from src.services.auth_service import get_current_user
 from src.utils.logger import configure_logging, logger
 
 
@@ -17,6 +26,7 @@ from src.utils.logger import configure_logging, logger
 async def lifespan(app: FastAPI):
     configure_logging()
     await connect_db()
+    await ensure_initial_admin()
     seeded = await seed_default_phrases()
     if seeded:
         logger.info(f"Banco de frases populado com {seeded} frase(s) padrão")
@@ -39,11 +49,13 @@ app.add_middleware(
 
 register_error_handlers(app)
 
-app.include_router(session_routes.router, prefix=settings.API_PREFIX)
-app.include_router(message_routes.router, prefix=settings.API_PREFIX)
-app.include_router(warmup_routes.router, prefix=settings.API_PREFIX)
-app.include_router(phrase_routes.router, prefix=settings.API_PREFIX)
-app.include_router(number_routes.router, prefix=settings.API_PREFIX)
+protected = [Depends(get_current_user)]
+app.include_router(auth_routes.router, prefix=settings.API_PREFIX)
+app.include_router(session_routes.router, prefix=settings.API_PREFIX, dependencies=protected)
+app.include_router(message_routes.router, prefix=settings.API_PREFIX, dependencies=protected)
+app.include_router(warmup_routes.router, prefix=settings.API_PREFIX, dependencies=protected)
+app.include_router(phrase_routes.router, prefix=settings.API_PREFIX, dependencies=protected)
+app.include_router(number_routes.router, prefix=settings.API_PREFIX, dependencies=protected)
 
 
 @app.get("/health")

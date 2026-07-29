@@ -10,7 +10,9 @@ from src.utils.logger import logger
 
 
 class WahaError(Exception):
-    pass
+    def __init__(self, message: str, status_code: int | None = None):
+        super().__init__(message)
+        self.status_code = status_code
 
 
 class WahaService:
@@ -56,13 +58,27 @@ class WahaService:
                 f"WAHA {method} {path} -> {response.status_code}: {response.text}"
             )
             raise WahaError(
-                f"WAHA request failed ({response.status_code}): {response.text}"
+                f"WAHA request failed ({response.status_code}): {response.text}",
+                status_code=response.status_code,
             )
         return response
 
     async def start_session(self, session_name: str) -> dict:
         payload = {"name": session_name, "start": True}
         resp = await self._request("POST", "/api/sessions", json=payload)
+        return resp.json()
+
+    async def restart_existing_session(self, session_name: str) -> dict:
+        payload = {"name": session_name, "start": True}
+        resp = await self._request(
+            "PUT",
+            f"/api/sessions/{session_name}",
+            json=payload,
+        )
+        await self._request(
+            "POST",
+            f"/api/sessions/{session_name}/start",
+        )
         return resp.json()
 
     async def get_session_status(self, session_name: str) -> dict:

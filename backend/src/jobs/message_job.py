@@ -1,8 +1,19 @@
+from datetime import datetime, timezone
+
 from src.db import connect_db
 from src.repositories import warmup_log_repository, number_repository
 from src.services import warmup_service
 from src.services.waha_service import build_waha_service_for_node, phone_to_chat_id, WahaError
 from src.utils.logger import logger
+
+
+def _warmup_is_active(number) -> bool:
+    return (
+        number.active
+        and number.warmupStartedAt is not None
+        and number.warmupFinishAt is not None
+        and datetime.now(timezone.utc) < number.warmupFinishAt
+    )
 
 
 async def send_message_job(ctx, message_id: str, warmup_day: int):
@@ -19,6 +30,16 @@ async def send_message_job(ctx, message_id: str, warmup_day: int):
     receiver = await number_repository.get_by_id(message.receiverId)
     if sender is None or receiver is None:
         await warmup_log_repository.mark_message_failed(message_id, "sender/receiver não encontrado")
+        return
+
+    if not _warmup_is_active(sender):
+        await warmup_log_repository.mark_message_failed(
+            message_id,
+            "Aquecimento parado antes do envio",
+        )
+        logger.info(
+            f"[message_job] envio {message_id} cancelado: aquecimento inativo"
+        )
         return
 
     waha = await build_waha_service_for_node(sender.node)

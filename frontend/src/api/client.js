@@ -1,9 +1,11 @@
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 async function request(path, options = {}) {
+    const token = localStorage.getItem("auth_token");
     const response = await fetch(`${BASE_URL}${path}`, {
         headers: {
             "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...(options.headers || {}),
         },
         ...options,
@@ -17,7 +19,16 @@ async function request(path, options = {}) {
         } catch {
             // resposta sem corpo JSON, mantém o statusText
         }
-        throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+        const error = new Error(
+            typeof detail === "string" ? detail : JSON.stringify(detail),
+        );
+        error.status = response.status;
+        if (response.status === 401 && path !== "/auth/login") {
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("auth_user");
+            window.location.assign("/");
+        }
+        throw error;
     }
 
     if (response.status === 204) return null;

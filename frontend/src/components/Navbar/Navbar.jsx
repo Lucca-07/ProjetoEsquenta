@@ -1,26 +1,63 @@
-import "./Navbar.css"
-import { FaFireAlt, FaWhatsapp } from "react-icons/fa";
+import "./Navbar.css";
+import { FaFireAlt, FaUserShield, FaWhatsapp } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import { clearSession, getStoredUser } from "../../api/auth";
 
-export default function Navbar({func}) {
+export default function Navbar({ func }) {
+    const navigate = useNavigate();
+    const user = getStoredUser();
     const navbarLinks = [
         { label: "Esquenta", href: "/esquenta", icon: <FaFireAlt /> },
-        { label: "Conectar", href: "get/conectar", icon: <FaWhatsapp /> },
-    ]
-    const navigate = useNavigate();
+        { label: "Conectar", action: "connect", icon: <FaWhatsapp /> },
+        ...(user?.role === "ADMIN"
+            ? [
+                  {
+                      label: "ADM",
+                      href: "/admin",
+                      icon: <FaUserShield />,
+                  },
+              ]
+            : []),
+    ];
+
+    function handleLink(link) {
+        if (link.action === "connect") {
+            if (func?.setHidden) {
+                func.setHidden(false);
+            } else {
+                navigate("/esquenta");
+            }
+            return;
+        }
+        navigate(link.href);
+    }
+
+    function logout() {
+        clearSession();
+        navigate("/", { replace: true });
+    }
+
+    const initial = user?.name?.trim()?.[0]?.toUpperCase() || "U";
 
     return (
         <nav className="navbar">
             <div className="navbar-brand">
                 <div className="navbar-brand-card">
-                    <img src="../../../assets/simbolo_pl.svg" alt="Simbolo do PL" width="80px" />
-                    <p className="montserrat-medium">Major Vitor Santos</p>
+                    <img
+                        src="../../../assets/simbolo_pl.svg"
+                        alt="Símbolo do PL"
+                    />
+                    <p className="montserrat-medium">Painel Esquenta</p>
                 </div>
             </div>
             <div className="navbar-links">
-                {navbarLinks.map((link, index) => (
-                    <a key={index} onClick={() => { link.href[0] == "/" ? navigate(link.href) : func.setHidden(false) }} className="navbar-link montserrat-regular-italic">
+                {navbarLinks.map((link) => (
+                    <a
+                        key={link.label}
+                        onClick={() => handleLink(link)}
+                        className="navbar-link montserrat-regular"
+                    >
                         {link.icon}
                         <span>{link.label}</span>
                     </a>
@@ -29,20 +66,20 @@ export default function Navbar({func}) {
             <div className="navbar-footer">
                 <div className="navbar-profile">
                     <div className="navbar-profile-image">
-                        <p className="montserrat-medium">M</p>
+                        <p className="montserrat-medium">{initial}</p>
                     </div>
                     <div className="navbar-profile-info">
-                        <p className="montserrat-regular navbar-profile-name">Major Vitor Santos</p>
-                        <p className="montserrat-light navbar-profile-email">majorvitorsantos595@gmail.com</p>
+                        <p className="navbar-profile-name">{user?.name}</p>
+                        <p className="navbar-profile-email">{user?.email}</p>
                     </div>
                 </div>
                 <div className="navbar-logout">
-                    <a className="montserrat-regular" onClick={() => { navigate("/") }}>
+                    <a onClick={logout}>
                         <FiLogOut />
                         <span>Sair</span>
                     </a>
                 </div>
             </div>
         </nav>
-    )
+    );
 }

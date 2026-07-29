@@ -10,6 +10,17 @@ datasource db {
 }
 
 // Servidor físico que hospeda instâncias WAHA (ex: kvm8-1, kvm8-2)
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("USER") // ADMIN, USER
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model WahaNode {
   id        String   @id @default(uuid())
   name      String   @unique
@@ -37,7 +48,7 @@ model Number {
   dailySentCount Int      @default(0)
   lastResetAt    DateTime @default(now())
 
-  intervalSeconds Int       @default(90)
+  intervalSeconds Int       @default(240)
   durationHours   Int       @default(24)
   warmupStartedAt DateTime?
   warmupFinishAt  DateTime?
