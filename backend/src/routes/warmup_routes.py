@@ -8,7 +8,7 @@ router = APIRouter(prefix="/warmup", tags=["warmup"])
 
 @router.post("/start-bulk")
 async def start_warmup_bulk(payload: WarmupBulkRequest):
-    return await warmup_controller.start_warmup_bulk(payload.number_ids)
+    return await warmup_controller.start_warmup_bulk(payload)
 
 
 @router.post("/pause-bulk")

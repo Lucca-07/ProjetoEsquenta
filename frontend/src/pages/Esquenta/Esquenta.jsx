@@ -81,11 +81,11 @@ export default function Esquenta() {
 
         try {
             await warmupApi.startBulk({
-                ids: selecionados,
+                number_ids: selecionados,
 
-                intervalo: config.intervalo,
+                interval_seconds: config.intervalo,
 
-                duracao: config.duracao,
+                duration_hours: config.duracao,
             });
 
             setSelecionados([]);
@@ -100,7 +100,11 @@ export default function Esquenta() {
 
     async function pararEsquenta() {
         if (!selecionados.length) return;
-        await warmupApi.pauseBulk(selecionados);
+        try {
+            await warmupApi.pauseBulk(selecionados);
+        } catch (err) {
+            console.error(err);
+        }
         setSelecionados([]);
         carregarDados();
     }

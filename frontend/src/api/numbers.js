@@ -18,12 +18,7 @@ export const warmupApi = {
 
     pause: (numberId) => api.post(`/warmup/${numberId}/pause`),
 
-    startBulk: ({ ids, intervalo, duracao }) =>
-        api.post("/warmup/start-bulk", {
-            number_ids: ids,
-            interval_seconds: intervalo,
-            duration_hours: duracao,
-        }),
+    startBulk: (payload) => api.post("/warmup/start-bulk", payload),
 
     pauseBulk: (numberIds) =>
         api.post("/warmup/pause-bulk", {

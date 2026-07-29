@@ -29,13 +29,18 @@ model Number {
   nodeId      String
   node        WahaNode @relation(fields: [nodeId], references: [id])
 
-  status      String   @default("STARTING") // STARTING, SCAN_QR_CODE, WORKING, FAILED, STOPPED
-  active      Boolean  @default(true)
+  status String  @default("STARTING") // STARTING, SCAN_QR_CODE, WORKING, FAILED, STOPPED
+  active Boolean @default(true)
 
   warmupDay      Int      @default(0)
   dailyTarget    Int      @default(0)
   dailySentCount Int      @default(0)
   lastResetAt    DateTime @default(now())
+
+  intervalSeconds Int       @default(90)
+  durationHours   Int       @default(24)
+  warmupStartedAt DateTime?
+  warmupFinishAt  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -77,7 +82,7 @@ model Message {
 // Banco de frases usadas para gerar as mensagens de aquecimento (spintax)
 model WarmupPhrase {
   id        String   @id @default(uuid())
-  text      String   // texto em spintax, ex: "{Oi|Olá}, tudo {bem|certo}?"
+  text      String // texto em spintax, ex: "{Oi|Olá}, tudo {bem|certo}?"
   category  String   @default("geral") // geral, saudacao, despedida, confirmacao...
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -91,7 +96,7 @@ model WarmupLog {
   day              Int
   messagesSent     Int      @default(0)
   messagesReceived Int      @default(0)
-  event            String   // DAY_ADVANCED, TARGET_REACHED, SEND_ERROR, SESSION_DOWN...
+  event            String // DAY_ADVANCED, TARGET_REACHED, SEND_ERROR, SESSION_DOWN...
   detail           String?
   createdAt        DateTime @default(now())
 }

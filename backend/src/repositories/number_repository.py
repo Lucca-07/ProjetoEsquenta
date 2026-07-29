@@ -2,8 +2,10 @@ from datetime import datetime
 
 from src.db import db
 
+from prisma.models import Number
 
-async def create_number(phone: str, session_name: str, node_id: str):
+
+async def create_number(phone: str, session_name: str, node_id: str) -> Number:
     return await db.number.create(
         data={
             "phone": phone,
@@ -13,24 +15,29 @@ async def create_number(phone: str, session_name: str, node_id: str):
     )
 
 
-async def get_by_id(number_id: str):
+async def get_by_id(number_id: str) -> Number | None:
     return await db.number.find_unique(where={"id": number_id}, include={"node": True})
 
 
 async def get_by_session_name(session_name: str):
-    return await db.number.find_unique(where={"sessionName": session_name}, include={"node": True})
+    return await db.number.find_unique(
+        where={"sessionName": session_name}, include={"node": True}
+    )
 
 
 async def list_all(active_only: bool = False):
     where = {"active": True} if active_only else {}
-    return await db.number.find_many(where=where, include={"node": True}, order={"createdAt": "asc"})
+    return await db.number.find_many(
+        where=where, include={"node": True}, order={"createdAt": "asc"}
+    )
 
 
-async def update_status(number_id: str, status: str):
+
+async def update_status(number_id: str, status: str) -> Number | None:
     return await db.number.update(where={"id": number_id}, data={"status": status})
 
 
-async def set_active(number_id: str, active: bool):
+async def set_active(number_id: str, active: bool) -> Number | None:
     return await db.number.update(where={"id": number_id}, data={"active": active})
 
 
@@ -40,7 +47,7 @@ async def update_warmup_progress(
     daily_target: int | None = None,
     daily_sent_count: int | None = None,
     reset_daily: bool = False,
-):
+) -> Number | None:
     data: dict = {}
     if warmup_day is not None:
         data["warmupDay"] = warmup_day
@@ -72,4 +79,22 @@ async def get_or_create_node(name: str, base_url: str, api_key: str | None = Non
         return node
     return await db.wahanode.create(
         data={"name": name, "baseUrl": base_url, "apiKey": api_key}
+    )
+
+
+async def update_warmup_config(
+    number_id: str,
+    interval_seconds: int,
+    duration_hours: int,
+    warmup_started_at: datetime,
+    warmup_finish_at: datetime,
+):
+    return await db.number.update(
+        where={"id": number_id},
+        data={
+            "intervalSeconds": interval_seconds,
+            "durationHours": duration_hours,
+            "warmupStartedAt": warmup_started_at,
+            "warmupFinishAt": warmup_finish_at,
+        },
     )
