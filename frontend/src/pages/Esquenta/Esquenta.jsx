@@ -3,6 +3,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import CardInfo from "../../components/CardInfo/CardInfo";
 import CardCodeqr from "../../components/CardCodeqr/CardCodeqr";
 import CardCodigo from "../../components/CardCodigo/CardCodigo";
+import ConfirmWarmupModal from "../../components/ConfirmWarmupModal/ConfirmWarmupModal";
 import { FaFireAlt, FaMobileAlt, FaCheck } from "react-icons/fa";
 import { AiOutlineClose } from "react-icons/ai";
 import { useEffect, useRef, useState } from "react";
@@ -12,10 +13,17 @@ const NODE_NAME = "kvm8-1"; // ajuste se quiser escolher o nó no próprio formu
 
 export default function Esquenta() {
     const [numeros, setNumeros] = useState([]);
-    const [summary, setSummary] = useState({ connected: 0, warming: 0, completed: 0, not_completed: 0 });
+    const [summary, setSummary] = useState({
+        connected: 0,
+        warming: 0,
+        completed: 0,
+        not_completed: 0,
+    });
     const [selecionados, setSelecionados] = useState([]);
     const [loading, setLoading] = useState(true);
     const [erro, setErro] = useState(null);
+
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const [hidden, setHidden] = useState(true);
 
@@ -26,7 +34,9 @@ export default function Esquenta() {
     const pollRef = useRef(null);
 
     const progressoMedio = numeros.length
-        ? Math.round(numeros.reduce((acc, n) => acc + n.progresso, 0) / numeros.length)
+        ? Math.round(
+              numeros.reduce((acc, n) => acc + n.progresso, 0) / numeros.length,
+          )
         : 0;
     const preenchimento = {
         background: `linear-gradient(to right, #426143 0%, #4CAF50 ${progressoMedio}%, #ddd ${progressoMedio}%, #ddd 100%)`,
@@ -60,15 +70,32 @@ export default function Esquenta() {
 
     function toggleSelecionado(id) {
         setSelecionados((prev) =>
-            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+            prev.includes(id)
+                ? prev.filter((item) => item !== id)
+                : [...prev, id],
         );
     }
 
-    async function iniciarEsquenta() {
+    async function iniciarEsquenta(config) {
         if (!selecionados.length) return;
-        await warmupApi.startBulk(selecionados);
-        setSelecionados([]);
-        carregarDados();
+
+        try {
+            await warmupApi.startBulk({
+                ids: selecionados,
+
+                intervalo: config.intervalo,
+
+                duracao: config.duracao,
+            });
+
+            setSelecionados([]);
+
+            setShowConfirmModal(false);
+
+            carregarDados();
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     async function pararEsquenta() {
@@ -84,10 +111,19 @@ export default function Esquenta() {
         setConectando(true);
         setQrValue(null);
         try {
-            const numero = await sessionsApi.create(telefone.replace(/\D/g, ""), NODE_NAME);
+            const numero = await sessionsApi.create(
+                telefone.replace(/\D/g, ""),
+                NODE_NAME,
+            );
             pollRef.current = setInterval(async () => {
                 try {
                     const status = await sessionsApi.getStatus(numero.id);
+                    console.log("STATUS:", status);
+
+                    if (status.qr) {
+                        console.log("QR recebido");
+                        setQrValue(status.qr);
+                    }
                     if (status.qr) setQrValue(status.qr);
                     if (status.status === "WORKING") {
                         clearInterval(pollRef.current);
@@ -98,7 +134,32 @@ export default function Esquenta() {
                         carregarDados();
                     }
                 } catch (err) {
-                    clearInterval(pollRef.current);
+                    console.error(err);
+                    console.log(err.response);
+
+                    setConectarErro(
+                        err.response?.message ||
+                            err.message ||
+                            "Erro ao conectar",
+                    );
+
+                    if (err.response?.status === 409) {
+                        // sessão já existe
+                        // agora só consulta o status dela
+
+                        setConectando(true);
+
+                        pollRef.current = setInterval(async () => {
+                            const status = await sessionsApi.getStatus(
+                                telefone.replace(/\D/g, ""),
+                            );
+
+                            if (status.qr) setQrValue(status.qr);
+                        }, 3000);
+
+                        return;
+                    }
+
                     setConectarErro(err.message);
                     setConectando(false);
                 }
@@ -116,15 +177,20 @@ export default function Esquenta() {
         setQrValue(null);
         setConectarErro(null);
     }
-
     return (
         <div className="esquenta-container">
             {!hidden && (
                 <div className="esquenta-codes">
                     {!conectando && (
                         <CardCodigo codeHidden={false}>
-                            <form className="esquenta-connect-form" onSubmit={conectarNumero}>
-                                <label className="montserrat-medium" htmlFor="telefone-connect">
+                            <form
+                                className="esquenta-connect-form"
+                                onSubmit={conectarNumero}
+                            >
+                                <label
+                                    className="montserrat-medium"
+                                    htmlFor="telefone-connect"
+                                >
                                     Número (com DDI + DDD)
                                 </label>
                                 <input
@@ -133,10 +199,15 @@ export default function Esquenta() {
                                     type="text"
                                     placeholder="5511999999999"
                                     value={telefone}
-                                    onChange={(e) => setTelefone(e.target.value)}
+                                    onChange={(e) =>
+                                        setTelefone(e.target.value)
+                                    }
                                     required
                                 />
-                                <button type="submit" className="card-connect montserrat-medium">
+                                <button
+                                    type="submit"
+                                    className="card-connect montserrat-medium"
+                                >
                                     Gerar QR Code
                                 </button>
                             </form>
@@ -144,7 +215,11 @@ export default function Esquenta() {
                     )}
                     {conectando && (
                         <CardCodeqr codeHidden={false} qr={qrValue}>
-                            {conectarErro && <p className="esquenta-connect-erro">{conectarErro}</p>}
+                            {conectarErro && (
+                                <p className="esquenta-connect-erro">
+                                    {conectarErro}
+                                </p>
+                            )}
                             <div
                                 className="card-voltar"
                                 onClick={() => {
@@ -157,7 +232,10 @@ export default function Esquenta() {
                             </div>
                         </CardCodeqr>
                     )}
-                    <div className="esquenta-codeqr-overlay" onClick={fecharModal} />
+                    <div
+                        className="esquenta-codeqr-overlay"
+                        onClick={fecharModal}
+                    />
                 </div>
             )}
             <nav className="navbar">
@@ -165,46 +243,87 @@ export default function Esquenta() {
             </nav>
             <div className="esquenta-content">
                 <div className="esquenta-card">
-                    {erro && <p className="esquenta-connect-erro">Não foi possível falar com o backend: {erro}</p>}
+                    {erro && (
+                        <p className="esquenta-connect-erro">
+                            Não foi possível falar com o backend: {erro}
+                        </p>
+                    )}
                     <div className="esquenta-mini-cards">
-                        <CardInfo icon={<FaMobileAlt />} text={`${summary.connected} Conectados`}></CardInfo>
-                        <CardInfo icon={<FaFireAlt />} text={`${summary.warming} Esquentando`}></CardInfo>
-                        <CardInfo icon={<FaCheck />} text={`${summary.completed} Concluídos`}></CardInfo>
-                        <CardInfo icon={<AiOutlineClose />} text={`${summary.not_completed} Não concluídos`}></CardInfo>
+                        <CardInfo
+                            icon={<FaMobileAlt />}
+                            text={`${summary.connected} Conectados`}
+                        ></CardInfo>
+                        <CardInfo
+                            icon={<FaFireAlt />}
+                            text={`${summary.warming} Esquentando`}
+                        ></CardInfo>
+                        <CardInfo
+                            icon={<FaCheck />}
+                            text={`${summary.completed} Concluídos`}
+                        ></CardInfo>
+                        <CardInfo
+                            icon={<AiOutlineClose />}
+                            text={`${summary.not_completed} Não concluídos`}
+                        ></CardInfo>
                     </div>
                     <div className="esquenta-medium-card">
                         <div className="esquenta-medium-left-card">
-                            <p className="esquenta-medium-card-title montserrat-medium">Progresso</p>
+                            <p className="esquenta-medium-card-title montserrat-medium">
+                                Progresso
+                            </p>
                             <div className="esquenta-medium-left-card-content">
-                                <input readOnly style={preenchimento} type="range" min="0" max="100" value={progressoMedio} className="esquenta-slider" />
+                                <input
+                                    readOnly
+                                    style={preenchimento}
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={progressoMedio}
+                                    className="esquenta-slider"
+                                />
                                 <div className="esquenta-slider-info-container">
-                                    <span className="esquenta-slider-info">{progressoMedio}% Completo (média)</span>
-                                    <span className="esquenta-slider-info">{numeros.length} número(s)</span>
+                                    <span className="esquenta-slider-info">
+                                        {progressoMedio}% Completo (média)
+                                    </span>
+                                    <span className="esquenta-slider-info">
+                                        {numeros.length} número(s)
+                                    </span>
                                 </div>
                             </div>
                         </div>
                         <div className="esquenta-medium-right-card">
-                            <p className="esquenta-medium-card-title montserrat-medium">Título</p>
+                            <p className="esquenta-medium-card-title montserrat-medium">
+                                Título
+                            </p>
                             <div className="esquenta-medium-card-content">
-                                <p className="esquenta-status-text">A decidir ainda</p>
+                                <p className="esquenta-status-text">
+                                    A decidir ainda
+                                </p>
                             </div>
                         </div>
                     </div>
                     <div className="esquenta-bottom-card">
                         <div className="esquenta-bottom-card-header">
-                            <p className="esquenta-bottom-card-title montserrat-medium">Números</p>
+                            <p className="esquenta-bottom-card-title montserrat-medium">
+                                Números
+                            </p>
                             <div className="esquenta-bottom-card-buttons">
                                 <button
+                                    type="button"
                                     className="esquenta-bottom-card-button parar montserrat-semibold"
                                     disabled={!selecionados.length}
                                     onClick={pararEsquenta}
                                 >
                                     Parar Esquenta
                                 </button>
+
                                 <button
+                                    type="button"
                                     className="esquenta-bottom-card-button iniciar montserrat-semibold"
                                     disabled={!selecionados.length}
-                                    onClick={iniciarEsquenta}
+                                    onClick={() => {
+                                        setShowConfirmModal(true);
+                                    }}
                                 >
                                     Iniciar Esquenta
                                 </button>
@@ -214,40 +333,80 @@ export default function Esquenta() {
                             <table className="esquenta-bottom-card-table">
                                 <thead>
                                     <tr className="esquenta-bottom-card-table-header">
-                                        <th className="esquenta-bottom-card-table-header-checkbox">Selecionar</th>
-                                        <th className="esquenta-bottom-card-table-header">Número</th>
-                                        <th className="esquenta-bottom-card-table-header">Progresso</th>
-                                        <th className="esquenta-bottom-card-table-header">Tempo restante</th>
-                                        <th className="esquenta-bottom-card-table-header">Status</th>
+                                        <th className="esquenta-bottom-card-table-header-checkbox">
+                                            Selecionar
+                                        </th>
+                                        <th className="esquenta-bottom-card-table-header">
+                                            Número
+                                        </th>
+                                        <th className="esquenta-bottom-card-table-header">
+                                            Progresso
+                                        </th>
+                                        <th className="esquenta-bottom-card-table-header">
+                                            Tempo restante
+                                        </th>
+                                        <th className="esquenta-bottom-card-table-header">
+                                            Status
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {loading && (
                                         <tr>
-                                            <td colSpan={5} className="esquenta-bottom-card-table-cell">Carregando...</td>
+                                            <td
+                                                colSpan={5}
+                                                className="esquenta-bottom-card-table-cell"
+                                            >
+                                                Carregando...
+                                            </td>
                                         </tr>
                                     )}
                                     {!loading && numeros.length === 0 && (
                                         <tr>
-                                            <td colSpan={5} className="esquenta-bottom-card-table-cell">
-                                                Nenhum número cadastrado ainda. Clique em "Conectar" na barra lateral.
+                                            <td
+                                                colSpan={5}
+                                                className="esquenta-bottom-card-table-cell"
+                                            >
+                                                Nenhum número cadastrado ainda.
+                                                Clique em "Conectar" na barra
+                                                lateral.
                                             </td>
                                         </tr>
                                     )}
                                     {numeros.map((item) => (
-                                        <tr key={item.id} className="esquenta-bottom-card-table-row">
-                                            <td className="esquenta-bottom-card-table-cell esquenta-bottom-card-table-checkbox" style={{ width: "10%" }}>
+                                        <tr
+                                            key={item.id}
+                                            className="esquenta-bottom-card-table-row"
+                                        >
+                                            <td
+                                                className="esquenta-bottom-card-table-cell esquenta-bottom-card-table-checkbox"
+                                                style={{ width: "10%" }}
+                                            >
                                                 <input
                                                     type="checkbox"
                                                     className="esquenta-bottom-card-table-checkbox-input"
-                                                    checked={selecionados.includes(item.id)}
-                                                    onChange={() => toggleSelecionado(item.id)}
+                                                    checked={selecionados.includes(
+                                                        item.id,
+                                                    )}
+                                                    onChange={() =>
+                                                        toggleSelecionado(
+                                                            item.id,
+                                                        )
+                                                    }
                                                 />
                                             </td>
-                                            <td className="esquenta-bottom-card-table-cell">{item.numero}</td>
-                                            <td className="esquenta-bottom-card-table-cell">{item.progresso}%</td>
-                                            <td className="esquenta-bottom-card-table-cell">{item.tempo_restante}</td>
-                                            <td className="esquenta-bottom-card-table-cell">{item.status}</td>
+                                            <td className="esquenta-bottom-card-table-cell">
+                                                {item.numero}
+                                            </td>
+                                            <td className="esquenta-bottom-card-table-cell">
+                                                {item.progresso}%
+                                            </td>
+                                            <td className="esquenta-bottom-card-table-cell">
+                                                {item.tempo_restante}
+                                            </td>
+                                            <td className="esquenta-bottom-card-table-cell">
+                                                {item.status}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -256,6 +415,12 @@ export default function Esquenta() {
                     </div>
                 </div>
             </div>
+            <ConfirmWarmupModal
+                open={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                numeros={selecionados}
+                onConfirm={iniciarEsquenta}
+            />
         </div>
     );
 }

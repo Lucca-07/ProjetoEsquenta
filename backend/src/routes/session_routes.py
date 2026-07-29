@@ -1,7 +1,11 @@
 from fastapi import APIRouter
 
 from src.controllers import session_controller
-from src.models.session_schema import SessionCreate, SessionResponse, SessionStatusResponse
+from src.models.session_schema import (
+    SessionCreate,
+    SessionResponse,
+    SessionStatusResponse,
+)
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
