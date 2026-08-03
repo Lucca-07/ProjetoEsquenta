@@ -26,7 +26,7 @@ def test_waha_error_preserves_http_status_code():
     assert error.status_code == 422
 
 
-async def test_restart_existing_session_updates_and_starts_it():
+async def test_restart_existing_session_uses_restart_endpoint():
     service = WahaService("http://waha")
     response = MagicMock()
     response.json.return_value = {"name": "session-test"}
@@ -37,12 +37,8 @@ async def test_restart_existing_session_updates_and_starts_it():
     finally:
         await service.close()
 
-    assert service._request.await_count == 2
+    assert service._request.await_count == 1
     assert service._request.await_args_list[0].args[:2] == (
-        "PUT",
-        "/api/sessions/session-test",
-    )
-    assert service._request.await_args_list[1].args[:2] == (
         "POST",
-        "/api/sessions/session-test/start",
+        "/api/sessions/session-test/restart",
     )

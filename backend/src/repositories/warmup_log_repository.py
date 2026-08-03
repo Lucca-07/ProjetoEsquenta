@@ -23,11 +23,17 @@ async def get_logs_for_number(number_id: str, limit: int = 50):
     )
 
 
-async def create_message(sender_id: str, receiver_id: str, content: str):
+async def create_message(
+    sender_id: str,
+    receiver_id: str,
+    content: str,
+    group_id: str | None = None,
+):
     return await db.message.create(
         data={
             "senderId": sender_id,
             "receiverId": receiver_id,
+            "groupId": group_id,
             "content": content,
             "status": "PENDING",
         }
@@ -51,6 +57,23 @@ async def mark_message_failed(message_id: str, error: str):
 
 async def get_message(message_id: str):
     return await db.message.find_unique(where={"id": message_id})
+
+
+async def count_pending_for_sender(sender_id: str) -> int:
+    return await db.message.count(
+        where={"senderId": sender_id, "status": "PENDING"}
+    )
+
+
+async def cancel_pending_for_sender(sender_id: str) -> int:
+    result = await db.message.update_many(
+        where={"senderId": sender_id, "status": "PENDING"},
+        data={
+            "status": "FAILED",
+            "error": "Envio pendente cancelado ao iniciar um novo esquenta",
+        },
+    )
+    return result
 
 
 async def list_messages_for_number(number_id: str, limit: int = 50):

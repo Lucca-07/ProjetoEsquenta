@@ -27,10 +27,11 @@ services:
       - "6379:6379"
 
   waha-node1:
-    image: devlikeapro/waha:latest
+    image: ${WAHA_NODE1_IMAGE:-devlikeapro/waha:latest}
     restart: unless-stopped
     environment:
       WHATSAPP_API_KEY: ${WAHA_NODE1_API_KEY:-CHANGE_ME}
+      WHATSAPP_DEFAULT_ENGINE: ${WAHA_NODE1_ENGINE:-WEBJS}
     volumes:
       - waha_node1_sessions:/app/.sessions
     ports:

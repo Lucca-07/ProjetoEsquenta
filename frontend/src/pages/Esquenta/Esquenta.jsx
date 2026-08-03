@@ -14,6 +14,7 @@ const NODE_NAME = "kvm8-1"; // ajuste se quiser escolher o nó no próprio formu
 function statusClassName(status) {
     const classes = {
         "Em andamento": "warming",
+        Esquentando: "warming",
         Concluído: "completed",
         "Sem ação": "idle",
         Pausado: "paused",
@@ -23,6 +24,10 @@ function statusClassName(status) {
     };
 
     return classes[status] || "idle";
+}
+
+function statusLabel(status) {
+    return status === "Em andamento" ? "Esquentando" : status;
 }
 
 function remainingTimeValue(label) {
@@ -59,6 +64,8 @@ export default function Esquenta() {
     const [telefone, setTelefone] = useState("");
     const [conectando, setConectando] = useState(false);
     const [qrValue, setQrValue] = useState(null);
+    const [pairingCode, setPairingCode] = useState(null);
+    const [connectionMethod, setConnectionMethod] = useState("qr");
     const [conectarErro, setConectarErro] = useState(null);
     const pollRef = useRef(null);
 
@@ -70,6 +77,11 @@ export default function Esquenta() {
     const preenchimento = {
         background: `linear-gradient(to right, #426143 0%, #4CAF50 ${progressoMedio}%, #ddd ${progressoMedio}%, #ddd 100%)`,
     };
+    const tempoRestanteGeral =
+        numeros.find((item) =>
+            ["Em andamento", "Esquentando"].includes(item.status),
+        )
+            ?.tempo_restante || "Nenhum aquecimento em andamento";
 
     const numerosOrdenados = useMemo(() => {
         const termo = buscaNumero.trim().toLowerCase();
@@ -175,6 +187,7 @@ export default function Esquenta() {
 
         try {
             await warmupApi.startBulk({
+                name: config.nome,
                 number_ids: selecionados,
 
                 interval_seconds: config.intervalo,
@@ -238,8 +251,62 @@ export default function Esquenta() {
         }
     }
 
+    async function iniciarConexao(metodo = "qr") {
+        if (!telefone.trim()) {
+            setConectarErro("Informe o número com DDI e DDD.");
+            return;
+        }
+        setConectarErro(null);
+        setConectando(true);
+        setConnectionMethod(metodo);
+        setQrValue(null);
+        setPairingCode(null);
+        try {
+            const pending = await sessionsApi.create(
+                telefone.replace(/\D/g, ""),
+                NODE_NAME,
+            );
+            if (metodo === "code") {
+                const response = await sessionsApi.requestCode(
+                    pending.session_name,
+                    pending.phone,
+                    NODE_NAME,
+                );
+                setPairingCode(response.code);
+            }
+            pollRef.current = setInterval(async () => {
+                try {
+                    const status = await sessionsApi.getPendingStatus(
+                        pending.session_name,
+                        pending.phone,
+                        NODE_NAME,
+                    );
+                    if (metodo === "qr" && status.qr) {
+                        setQrValue(status.qr);
+                    }
+                    if (status.status === "WORKING") {
+                        clearInterval(pollRef.current);
+                        setHidden(true);
+                        setTelefone("");
+                        setQrValue(null);
+                        setPairingCode(null);
+                        setConectando(false);
+                        carregarDados();
+                    }
+                } catch (requestError) {
+                    setConectarErro(requestError.message);
+                }
+            }, 3000);
+        } catch (requestError) {
+            setConectarErro(requestError.message);
+            setConectando(false);
+        }
+    }
+
     async function conectarNumero(e) {
         e.preventDefault();
+        await iniciarConexao("qr");
+        if (e.defaultPrevented) return;
         setConectarErro(null);
         setConectando(true);
         setQrValue(null);
@@ -315,6 +382,7 @@ export default function Esquenta() {
         setHidden(true);
         setConectando(false);
         setQrValue(null);
+        setPairingCode(null);
         setConectarErro(null);
     }
     return (
@@ -345,16 +413,34 @@ export default function Esquenta() {
                                     required
                                 />
                                 <button
-                                    type="submit"
+                                    type="button"
                                     className="card-connect montserrat-medium"
+                                    onClick={() => iniciarConexao("qr")}
                                 >
                                     Gerar QR Code
                                 </button>
+                                <button
+                                    type="button"
+                                    className="card-connect secondary montserrat-medium"
+                                    onClick={() => iniciarConexao("code")}
+                                >
+                                    Conectar com código
+                                </button>
+                                {conectarErro && (
+                                    <p className="esquenta-connect-erro">
+                                        {conectarErro}
+                                    </p>
+                                )}
                             </form>
                         </CardCodigo>
                     )}
                     {conectando && (
-                        <CardCodeqr codeHidden={false} qr={qrValue}>
+                        <CardCodeqr
+                            codeHidden={false}
+                            qr={qrValue}
+                            pairingCode={pairingCode}
+                            mode={connectionMethod}
+                        >
                             {conectarErro && (
                                 <p className="esquenta-connect-erro">
                                     {conectarErro}
@@ -366,6 +452,7 @@ export default function Esquenta() {
                                     clearInterval(pollRef.current);
                                     setConectando(false);
                                     setQrValue(null);
+                                    setPairingCode(null);
                                 }}
                             >
                                 Voltar
@@ -440,7 +527,7 @@ export default function Esquenta() {
                                         {progressoMedio}% Completo (média)
                                     </span>
                                     <span className="esquenta-slider-info">
-                                        {numeros.length} número(s)
+                                        Tempo restante: {tempoRestanteGeral}
                                     </span>
                                 </div>
                             </div>
@@ -580,6 +667,16 @@ export default function Esquenta() {
                                             <button
                                                 type="button"
                                                 className="esquenta-sort-button"
+                                                onClick={() => ordenarPor("grupo")}
+                                            >
+                                                Grupo
+                                                <span>{indicadorOrdenacao("grupo")}</span>
+                                            </button>
+                                        </th>
+                                        <th className="esquenta-bottom-card-table-header">
+                                            <button
+                                                type="button"
+                                                className="esquenta-sort-button"
                                                 onClick={() => ordenarPor("status")}
                                             >
                                                 Status
@@ -592,7 +689,7 @@ export default function Esquenta() {
                                     {loading && (
                                         <tr>
                                             <td
-                                                colSpan={5}
+                                                colSpan={6}
                                                 className="esquenta-bottom-card-table-cell"
                                             >
                                                 Carregando...
@@ -602,7 +699,7 @@ export default function Esquenta() {
                                     {!loading && numeros.length === 0 && (
                                         <tr>
                                             <td
-                                                colSpan={5}
+                                                colSpan={6}
                                                 className="esquenta-bottom-card-table-cell"
                                             >
                                                 Nenhum número cadastrado ainda.
@@ -616,7 +713,7 @@ export default function Esquenta() {
                                         numerosOrdenados.length === 0 && (
                                             <tr>
                                                 <td
-                                                    colSpan={5}
+                                                    colSpan={6}
                                                     className="esquenta-bottom-card-table-cell esquenta-table-empty"
                                                 >
                                                     Nenhum número encontrado
@@ -656,6 +753,11 @@ export default function Esquenta() {
                                                 {item.tempo_restante}
                                             </td>
                                             <td className="esquenta-bottom-card-table-cell">
+                                                <span className="esquenta-group-name">
+                                                    {item.grupo}
+                                                </span>
+                                            </td>
+                                            <td className="esquenta-bottom-card-table-cell">
                                                 <span
                                                     className={`esquenta-status-badge status-${statusClassName(item.status)}`}
                                                 >
@@ -663,7 +765,7 @@ export default function Esquenta() {
                                                         className="esquenta-status-dot"
                                                         aria-hidden="true"
                                                     />
-                                                    {item.status}
+                                                    {statusLabel(item.status)}
                                                 </span>
                                             </td>
                                         </tr>

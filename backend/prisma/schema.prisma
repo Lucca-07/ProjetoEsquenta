@@ -61,6 +61,35 @@ model Number {
   messagesSent     Message[]    @relation("Sender")
   messagesReceived Message[]    @relation("Receiver")
   logs             WarmupLog[]
+  warmupGroups     WarmupGroupMember[]
+}
+
+// Um aquecimento reúne qualquer quantidade de números em uma única conversa.
+model WarmupGroup {
+  id              String   @id @default(uuid())
+  name            String
+  status          String   @default("ACTIVE") // ACTIVE, STOPPED, COMPLETED
+  intervalSeconds Int      @default(240)
+  durationHours   Int      @default(24)
+  startedAt       DateTime @default(now())
+  finishAt        DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  members WarmupGroupMember[]
+  messages Message[]
+}
+
+model WarmupGroupMember {
+  id       String      @id @default(uuid())
+  groupId  String
+  numberId String
+  group    WarmupGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  number   Number      @relation(fields: [numberId], references: [id], onDelete: Cascade)
+  joinedAt DateTime    @default(now())
+
+  @@unique([groupId, numberId])
+  @@index([numberId])
 }
 
 // Par de números que "conversam" entre si para aquecer
@@ -80,14 +109,18 @@ model Message {
   id          String    @id @default(uuid())
   senderId    String
   receiverId  String
+  groupId     String?
   sender      Number    @relation("Sender", fields: [senderId], references: [id])
   receiver    Number    @relation("Receiver", fields: [receiverId], references: [id])
+  group       WarmupGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   content     String
   status      String    @default("PENDING") // PENDING, SENT, DELIVERED, FAILED
   waMessageId String?
   error       String?
   createdAt   DateTime  @default(now())
   sentAt      DateTime?
+
+  @@index([groupId])
 }
 
 // Banco de frases usadas para gerar as mensagens de aquecimento (spintax)

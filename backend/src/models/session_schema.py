@@ -28,3 +28,16 @@ class SessionStatusResponse(BaseModel):
     session_name: str
     status: str
     qr: str | None = None
+    number_id: str | None = None
+
+
+class PendingSessionResponse(BaseModel):
+    session_name: str
+    phone: str
+    node_name: str
+    status: str
+
+
+class PairingCodeRequest(BaseModel):
+    phone: str
+    node_name: str

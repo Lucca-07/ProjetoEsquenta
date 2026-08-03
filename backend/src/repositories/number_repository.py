@@ -25,6 +25,13 @@ async def get_by_session_name(session_name: str):
     )
 
 
+async def get_by_phone(phone: str):
+    return await db.number.find_unique(
+        where={"phone": phone},
+        include={"node": True},
+    )
+
+
 async def list_all(active_only: bool = False):
     where = {"active": True} if active_only else {}
     return await db.number.find_many(
@@ -67,6 +74,9 @@ async def delete_number_with_history(number_id: str) -> Number | None:
             }
         )
         await transaction.warmuplog.delete_many(where={"numberId": number_id})
+        await transaction.warmupgroupmember.delete_many(
+            where={"numberId": number_id}
+        )
         await transaction.warmuppair.delete_many(
             where={
                 "OR": [

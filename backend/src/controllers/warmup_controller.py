@@ -3,7 +3,11 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 
 from src.models.warmup_schema import WarmupBulkRequest
-from src.repositories import number_repository, warmup_log_repository
+from src.repositories import (
+    number_repository,
+    warmup_group_repository,
+    warmup_log_repository,
+)
 from src.services.warmup_service import calculate_daily_target
 from src.utils.logger import logger
 
@@ -20,6 +24,8 @@ async def start_warmup(
             status_code=404,
             detail="Número não encontrado",
         )
+
+    await warmup_log_repository.cancel_pending_for_sender(number_id)
 
     target = calculate_daily_target(number.warmupDay)
 
@@ -50,9 +56,49 @@ async def start_warmup(
 
 
 async def start_warmup_bulk(payload: WarmupBulkRequest):
+    unique_ids = list(dict.fromkeys(payload.number_ids))
+    if len(unique_ids) < 2:
+        raise HTTPException(
+            status_code=422,
+            detail="Um esquenta em grupo precisa de pelo menos dois números",
+        )
+
+    numbers = []
+    for number_id in unique_ids:
+        number = await number_repository.get_by_id(number_id)
+        if number is None:
+            raise HTTPException(status_code=404, detail="Número não encontrado")
+        if number.status != "WORKING":
+            raise HTTPException(
+                status_code=409,
+                detail=f"O número {number.phone} não está conectado",
+            )
+        active_group = await warmup_group_repository.get_active_for_number(
+            number_id
+        )
+        if active_group:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"O número {number.phone} já pertence ao esquenta "
+                    f"'{active_group.name}'"
+                ),
+            )
+        numbers.append(number)
+
+    agora = datetime.now(timezone.utc)
+    group = await warmup_group_repository.create_group(
+        payload.name,
+        unique_ids,
+        payload.interval_seconds,
+        payload.duration_hours,
+        agora,
+        agora + timedelta(hours=payload.duration_hours),
+    )
+
     resultado = []
 
-    for number_id in payload.number_ids:
+    for number_id in unique_ids:
         resultado.append(
             await start_warmup(
                 number_id,
@@ -61,15 +107,33 @@ async def start_warmup_bulk(payload: WarmupBulkRequest):
             )
         )
 
-    return resultado
+    return {
+        "id": group.id,
+        "name": group.name,
+        "status": group.status,
+        "member_count": len(unique_ids),
+        "numbers": resultado,
+    }
 
 
 async def pause_warmup_bulk(number_ids: list[str]):
-    return [await pause_warmup(number_id) for number_id in number_ids]
+    expanded_ids = await _expand_group_members(number_ids)
+    return [await pause_warmup(number_id) for number_id in expanded_ids]
 
 
 async def stop_warmup_bulk(number_ids: list[str]):
-    return [await stop_warmup(number_id) for number_id in number_ids]
+    expanded_ids = await _expand_group_members(number_ids)
+    return [await stop_warmup(number_id) for number_id in expanded_ids]
+
+
+async def _expand_group_members(number_ids: list[str]) -> list[str]:
+    """Expande qualquer integrante selecionado para todo o seu grupo ativo."""
+    expanded = set(number_ids)
+    for number_id in number_ids:
+        group = await warmup_group_repository.get_active_for_number(number_id)
+        if group:
+            expanded.update(member.numberId for member in group.members)
+    return list(expanded)
 
 
 async def pause_warmup(number_id: str):
@@ -85,7 +149,20 @@ async def stop_warmup(number_id: str):
     if number is None:
         raise HTTPException(status_code=404, detail="Número não encontrado")
 
+    active_group = await warmup_group_repository.get_active_for_number(
+        number_id
+    )
     stopped_number = await number_repository.stop_warmup(number_id)
+
+    if active_group:
+        refreshed_group = await warmup_group_repository.get_by_id(
+            active_group.id
+        )
+        if not any(member.number.active for member in refreshed_group.members):
+            await warmup_group_repository.set_status(
+                active_group.id,
+                "STOPPED",
+            )
 
     try:
         await warmup_log_repository.add_log(

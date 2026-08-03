@@ -398,6 +398,13 @@ p.esquenta-medium-card-title {
     white-space: nowrap;
 }
 
+.esquenta-group-name {
+    color: #3f6550;
+    font-size: 0.78rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
 .esquenta-status-dot {
     width: 7px;
     height: 7px;
@@ -472,6 +479,33 @@ p.esquenta-medium-card-title {
     border-radius: 10px;
     font-size: 0.8rem;
     text-align: center;
+}
+
+.esquenta-connect-form .card-connect {
+    width: 100%;
+    border: 0;
+}
+
+.esquenta-connect-form .card-connect.secondary {
+    color: var(--green-800);
+    background: var(--green-100);
+    border: 1px solid #cfe6d5;
+}
+
+.esquenta-reconnect-button {
+    padding: 7px 10px;
+    color: #41644d;
+    background: #eaf4ed;
+    border: 1px solid #d1e5d6;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.esquenta-reconnect-button:disabled {
+    opacity: 0.55;
+    cursor: wait;
 }
 
 .esquenta-codes {

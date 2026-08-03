@@ -6,9 +6,10 @@ class WarmupStartRequest(BaseModel):
 
 
 class WarmupBulkRequest(BaseModel):
-    number_ids: list[str]
+    name: str = Field(..., min_length=2, max_length=80)
+    number_ids: list[str] = Field(..., min_length=2)
 
-    interval_seconds: int = Field(..., ge=30, le=3600)
+    interval_seconds: int = Field(..., ge=10, le=3600)
 
     duration_hours: int = Field(..., ge=1, le=720)
 

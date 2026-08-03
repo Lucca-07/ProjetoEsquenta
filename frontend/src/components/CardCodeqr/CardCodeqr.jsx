@@ -1,9 +1,20 @@
 import "./CardCodeqr.css";
 import { QRCodeSVG } from "qrcode.react";
 
-export default function CardCode({ children, codeHidden, qr }) {
+export default function CardCode({
+    children,
+    codeHidden,
+    qr,
+    pairingCode,
+    mode = "qr",
+}) {
+    const isPairingCode = mode === "code";
+
     return (
-        <div className="card-qrcode montserrat-medium" hidden={codeHidden}>
+        <div
+            className={`card-qrcode montserrat-medium ${isPairingCode ? "card-code-mode" : ""}`}
+            hidden={codeHidden}
+        >
             <div className="card-qrcode-title">
                 <h1>
                     Conectar Número de{" "}
@@ -12,7 +23,13 @@ export default function CardCode({ children, codeHidden, qr }) {
             </div>
 
             <div className="card-qrcode-img">
-                {qr ? (
+                {pairingCode ? (
+                    <div className="card-pairing-code">
+                        <span>Código de conexão</span>
+                        <strong>{pairingCode}</strong>
+                        <p>Digite este código em Aparelhos conectados.</p>
+                    </div>
+                ) : !isPairingCode && qr ? (
                     <QRCodeSVG
                         value={qr}
                         alt="QR Code de conexão"
@@ -20,14 +37,20 @@ export default function CardCode({ children, codeHidden, qr }) {
                         height={300}
                     />
                 ) : (
-                    <p>Gerando QR code...</p>
+                    <p>
+                        {isPairingCode
+                            ? "Gerando código de conexão..."
+                            : "Gerando QR code..."}
+                    </p>
                 )}
             </div>
 
-            <p style={{ marginTop: "10px" }}>
-                Aponte a camera para{" "}
-                <span className="span-verde">Conectar</span>
-            </p>
+            {!isPairingCode && !pairingCode && (
+                <p style={{ marginTop: "10px" }}>
+                    Aponte a câmera para{" "}
+                    <span className="span-verde">Conectar</span>
+                </p>
+            )}
 
             <div className="card-instruct montserrat-medium">
                 <p className="card-instruct-p">
@@ -37,7 +60,11 @@ export default function CardCode({ children, codeHidden, qr }) {
                     Toque em aparelhos conectados.{" "}
                     <span className="span-verde">Conectar aparelho</span>
                 </p>
-                <p>Escaneie o Qr Code</p>
+                <p>
+                    {isPairingCode
+                        ? "Escolha conectar com número de telefone e informe o código."
+                        : "Escaneie o QR Code"}
+                </p>
             </div>
 
             {children}

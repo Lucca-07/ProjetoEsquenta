@@ -49,6 +49,35 @@
     height: 100%;
 }
 
+.card-code-mode .card-qrcode-img {
+    min-height: 190px;
+    aspect-ratio: auto;
+}
+
+.card-pairing-code {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+}
+
+.card-pairing-code span {
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.card-pairing-code strong {
+    color: var(--green-800);
+    font-size: clamp(1.7rem, 6vw, 2.35rem);
+    letter-spacing: 0.12em;
+}
+
+.card-pairing-code p {
+    color: var(--muted);
+    font-size: 0.76rem;
+}
+
 .card-qrcode > p {
     margin-top: 14px !important;
     color: var(--muted);

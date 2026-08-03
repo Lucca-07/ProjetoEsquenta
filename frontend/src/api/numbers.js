@@ -9,7 +9,18 @@ export const sessionsApi = {
     list: () => api.get("/sessions"),
     create: (phone, nodeName) =>
         api.post("/sessions", { phone, node_name: nodeName }),
+    getPendingStatus: (sessionName, phone, nodeName) =>
+        api.get(
+            `/sessions/pending/${encodeURIComponent(sessionName)}/status?phone=${encodeURIComponent(phone)}&node_name=${encodeURIComponent(nodeName)}`,
+        ),
+    requestCode: (sessionName, phone, nodeName) =>
+        api.post(
+            `/sessions/pending/${encodeURIComponent(sessionName)}/code`,
+            { phone, node_name: nodeName },
+        ),
     getStatus: (numberId) => api.get(`/sessions/${numberId}/status`),
+    reconnect: (numberId) =>
+        api.post(`/sessions/${numberId}/reconnect`),
     stop: (numberId) => api.post(`/sessions/${numberId}/stop`),
 };
 
@@ -40,4 +51,16 @@ export const phrasesApi = {
     create: (text, category) => api.post("/phrases", { text, category }),
     update: (id, payload) => api.put(`/phrases/${id}`, payload),
     remove: (id) => api.del(`/phrases/${id}`),
+};
+
+export const logsApi = {
+    dashboard: ({ days, phone, status } = {}) => {
+        const params = new URLSearchParams();
+        if (days) params.set("days", days);
+        if (phone) params.set("phone", phone);
+        if (status) params.set("status", status);
+        const query = params.toString();
+        return api.get(`/logs/dashboard${query ? `?${query}` : ""}`);
+    },
+    deleteWarmup: (groupId) => api.del(`/logs/warmups/${groupId}`),
 };

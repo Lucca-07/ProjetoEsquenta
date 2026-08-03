@@ -47,6 +47,8 @@ async def is_number_due_for_message(number) -> bool:
         return False
     if not is_within_working_hours():
         return False
+    if await warmup_log_repository.count_pending_for_sender(number.id) > 0:
+        return False
     return number.dailySentCount < number.dailyTarget
 
 
@@ -57,15 +59,17 @@ async def prepare_next_message(number):
     partner = await pairing_service.get_partner_for(number)
     if partner is None:
         return None
-
-    await pairing_service.ensure_pair(number.id, partner.id)
+    group = await pairing_service.get_group_for(number)
 
     active_phrases = await phrase_repository.list_phrases(active_only=True)
     templates = [p.text for p in active_phrases] if active_phrases else None
     content = random_warmup_message(templates)
 
     message = await warmup_log_repository.create_message(
-        sender_id=number.id, receiver_id=partner.id, content=content
+        sender_id=number.id,
+        receiver_id=partner.id,
+        content=content,
+        group_id=group.id if group else None,
     )
     return message
 

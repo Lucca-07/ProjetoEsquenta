@@ -1,6 +1,7 @@
 import Esquenta from "./pages/Esquenta/Esquenta";
 import Login from "./pages/Login/Login";
 import Admin from "./pages/Admin/Admin";
+import Logs from "./pages/Logs/Logs";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
@@ -15,6 +16,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Esquenta />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/logs"
+          element={
+            <ProtectedRoute adminOnly>
+              <Logs />
             </ProtectedRoute>
           }
         />

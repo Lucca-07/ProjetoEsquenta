@@ -1,5 +1,10 @@
 import "./Navbar.css";
-import { FaFireAlt, FaUserShield, FaWhatsapp } from "react-icons/fa";
+import {
+    FaChartBar,
+    FaFireAlt,
+    FaUserShield,
+    FaWhatsapp,
+} from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { clearSession, getStoredUser } from "../../api/auth";
@@ -12,6 +17,11 @@ export default function Navbar({ func }) {
         { label: "Conectar", action: "connect", icon: <FaWhatsapp /> },
         ...(user?.role === "ADMIN"
             ? [
+                  {
+                      label: "Logs",
+                      href: "/logs",
+                      icon: <FaChartBar />,
+                  },
                   {
                       label: "ADM",
                       href: "/admin",

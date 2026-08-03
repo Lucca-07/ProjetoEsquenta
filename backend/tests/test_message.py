@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 from src.jobs.message_job import _warmup_is_active
+from src.services.waha_service import extract_message_id, phone_to_chat_id
 
 
 def test_spintax_resolves_single_option():
@@ -56,3 +57,30 @@ def test_running_warmup_is_active_for_queued_message():
     )
 
     assert _warmup_is_active(number) is True
+
+
+def test_extracts_serialized_id_from_waha_object():
+    result = {
+        "id": {
+            "fromMe": True,
+            "id": "ABC123",
+            "_serialized": "true_5511999999999@c.us_ABC123",
+        }
+    }
+
+    assert (
+        extract_message_id(result)
+        == "true_5511999999999@c.us_ABC123"
+    )
+
+
+def test_keeps_string_message_id():
+    assert extract_message_id({"id": "message-id"}) == "message-id"
+
+
+def test_adds_brazil_country_code_to_local_phone():
+    assert phone_to_chat_id("11 95360-8050") == "5511953608050@c.us"
+
+
+def test_preserves_phone_that_already_has_country_code():
+    assert phone_to_chat_id("55 11 95360-8050") == "5511953608050@c.us"

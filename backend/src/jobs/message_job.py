@@ -3,7 +3,12 @@ from datetime import datetime, timezone
 from src.db import connect_db
 from src.repositories import warmup_log_repository, number_repository
 from src.services import warmup_service
-from src.services.waha_service import build_waha_service_for_node, phone_to_chat_id, WahaError
+from src.services.waha_service import (
+    WahaError,
+    build_waha_service_for_node,
+    extract_message_id,
+    phone_to_chat_id,
+)
 from src.utils.logger import logger
 
 
@@ -24,6 +29,11 @@ async def send_message_job(ctx, message_id: str, warmup_day: int):
     message = await warmup_log_repository.get_message(message_id)
     if message is None:
         logger.error(f"[message_job] mensagem {message_id} não encontrada")
+        return
+    if message.status != "PENDING":
+        logger.info(
+            f"[message_job] mensagem {message_id} ignorada: status={message.status}"
+        )
         return
 
     sender = await number_repository.get_by_id(message.senderId)
@@ -46,7 +56,7 @@ async def send_message_job(ctx, message_id: str, warmup_day: int):
     try:
         chat_id = phone_to_chat_id(receiver.phone)
         result = await waha.send_text_message(sender.sessionName, chat_id, message.content)
-        wa_message_id = result.get("id")
+        wa_message_id = extract_message_id(result)
         await warmup_log_repository.mark_message_sent(message_id, wa_message_id)
         await warmup_service.register_send_result(sender.id, warmup_day, success=True)
         logger.info(f"[message_job] {sender.phone} -> {receiver.phone} enviado (day={warmup_day})")

@@ -1,6 +1,16 @@
+import asyncio
 from datetime import datetime, timezone
+from time import monotonic
 
-from src.repositories import number_repository
+from src.repositories import number_repository, warmup_group_repository
+from src.services.waha_service import WahaError, WahaService
+from src.utils.logger import logger
+
+
+_status_refresh_task: asyncio.Task | None = None
+_status_refresh_semaphore = asyncio.Semaphore(4)
+_last_status_refresh_at = 0.0
+_STATUS_REFRESH_INTERVAL_SECONDS = 30
 
 
 def _now_utc() -> datetime:
@@ -76,23 +86,74 @@ def _status_label(number) -> str:
     if number.status != "WORKING":
         return "Conectando"
 
-    return "Em andamento"
+    return "Esquentando"
 
 
-def _to_dashboard_item(number) -> dict:
+def _to_dashboard_item(number, group_name: str | None = None) -> dict:
     return {
         "id": number.id,
         "numero": number.phone,
         "progresso": _progress_percent(number),
         "tempo_restante": _remaining_label(number),
         "status": _status_label(number),
+        "grupo": group_name or "—",
         "conectado": number.status == "WORKING",
     }
 
 
 async def list_dashboard():
     numbers = await number_repository.list_all()
-    return [_to_dashboard_item(n) for n in numbers]
+    _schedule_status_refresh(numbers)
+    groups = await warmup_group_repository.list_active()
+    group_names = {
+        member.numberId: group.name
+        for group in groups
+        for member in group.members
+    }
+    return [_to_dashboard_item(n, group_names.get(n.id)) for n in numbers]
+
+
+def _schedule_status_refresh(numbers) -> None:
+    global _last_status_refresh_at, _status_refresh_task
+
+    refresh_due = (
+        monotonic() - _last_status_refresh_at
+        >= _STATUS_REFRESH_INTERVAL_SECONDS
+    )
+    if refresh_due and (
+        _status_refresh_task is None or _status_refresh_task.done()
+    ):
+        _last_status_refresh_at = monotonic()
+        _status_refresh_task = asyncio.create_task(
+            _refresh_all_session_statuses(numbers)
+        )
+
+
+async def _refresh_all_session_statuses(numbers) -> None:
+    async def refresh_with_limit(number) -> None:
+        async with _status_refresh_semaphore:
+            await _refresh_session_status(number)
+
+    await asyncio.gather(
+        *(refresh_with_limit(number) for number in numbers)
+    )
+
+
+async def _refresh_session_status(number) -> None:
+    waha = WahaService(number.node.baseUrl, number.node.apiKey)
+    try:
+        status_data = await waha.get_session_status(number.sessionName)
+        status = status_data.get("status", number.status)
+        if status != number.status:
+            await number_repository.update_status(number.id, status)
+            number.status = status
+    except WahaError as exc:
+        logger.warning(
+            f"[session] Não foi possível atualizar o status de "
+            f"{number.phone}: {exc}"
+        )
+    finally:
+        await waha.close()
 
 
 async def get_summary():

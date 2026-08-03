@@ -11,6 +11,7 @@ from src.middlewares.error_middleware import register_error_handlers
 from src.repositories.phrase_repository import seed_default_phrases
 from src.routes import (
     auth_routes,
+    dashboard_log_routes,
     message_routes,
     number_routes,
     phrase_routes,
@@ -56,6 +57,11 @@ app.include_router(message_routes.router, prefix=settings.API_PREFIX, dependenci
 app.include_router(warmup_routes.router, prefix=settings.API_PREFIX, dependencies=protected)
 app.include_router(phrase_routes.router, prefix=settings.API_PREFIX, dependencies=protected)
 app.include_router(number_routes.router, prefix=settings.API_PREFIX, dependencies=protected)
+app.include_router(
+    dashboard_log_routes.router,
+    prefix=settings.API_PREFIX,
+    dependencies=protected,
+)
 
 
 @app.get("/health")

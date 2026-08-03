@@ -1,4 +1,5 @@
 import httpx
+import json
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -69,17 +70,28 @@ class WahaService:
         return resp.json()
 
     async def restart_existing_session(self, session_name: str) -> dict:
-        payload = {"name": session_name, "start": True}
         resp = await self._request(
-            "PUT",
-            f"/api/sessions/{session_name}",
-            json=payload,
-        )
-        await self._request(
-            "POST",
-            f"/api/sessions/{session_name}/start",
+            "POST", f"/api/sessions/{session_name}/restart"
         )
         return resp.json()
+
+    async def delete_session(self, session_name: str) -> dict:
+        resp = await self._request(
+            "DELETE", f"/api/sessions/{session_name}"
+        )
+        return resp.json() if resp.content else {}
+
+    async def request_pairing_code(
+        self,
+        session_name: str,
+        phone: str,
+    ) -> str:
+        resp = await self._request(
+            "POST",
+            f"/api/{session_name}/auth/request-code",
+            json={"phoneNumber": normalize_phone(phone)},
+        )
+        return resp.json()["code"]
 
     async def get_session_status(self, session_name: str) -> dict:
         resp = await self._request("GET", f"/api/sessions/{session_name}")
@@ -91,7 +103,6 @@ class WahaService:
                 "GET", f"/api/{session_name}/auth/qr", params={"format": "raw"}
             )
             data = resp.json()
-            print(data.get("value"))
             return data.get("value")
         except WahaError:
             return None
@@ -108,9 +119,31 @@ class WahaService:
         return resp.json()
 
 
-def phone_to_chat_id(phone: str) -> str:
+def normalize_phone(phone: str) -> str:
     digits = "".join(ch for ch in phone if ch.isdigit())
+    if len(digits) in {10, 11}:
+        digits = f"55{digits}"
+    return digits
+
+
+def phone_to_chat_id(phone: str) -> str:
+    digits = normalize_phone(phone)
     return f"{digits}@c.us"
+
+
+def extract_message_id(result: dict) -> str | None:
+    """Converte os diferentes formatos de ID retornados pelo WAHA em texto."""
+    message_id = result.get("id")
+    if message_id is None:
+        return None
+    if isinstance(message_id, str):
+        return message_id
+    if isinstance(message_id, dict):
+        for key in ("_serialized", "serialized", "id"):
+            value = message_id.get(key)
+            if isinstance(value, str):
+                return value
+    return json.dumps(message_id, ensure_ascii=False, separators=(",", ":"))
 
 
 async def build_waha_service_for_node(node) -> WahaService:

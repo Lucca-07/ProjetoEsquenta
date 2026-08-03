@@ -63,6 +63,40 @@
     font-size: 0.9rem;
 }
 
+.warmup-section .warmup-name-input {
+    width: 100%;
+    min-height: 46px;
+    font-size: 1rem;
+}
+
+.warmup-custom-duration {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 11px;
+}
+
+.warmup-custom-duration span {
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.warmup-custom-duration select {
+    min-height: 42px;
+    padding: 0 10px;
+    color: var(--text);
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    outline: 0;
+    font-size: 0.84rem;
+}
+
+.warmup-custom-duration select:focus {
+    border-color: var(--green-500);
+    box-shadow: 0 0 0 3px rgba(52, 168, 83, 0.1);
+}
+
 .warmup-section > span {
     margin-left: 8px;
     color: var(--muted);

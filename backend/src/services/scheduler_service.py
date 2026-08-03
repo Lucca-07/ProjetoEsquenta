@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from arq import ArqRedis
 
@@ -29,6 +29,20 @@ async def run_scheduling_cycle(redis_pool: ArqRedis) -> int:
         if not await warmup_service.is_number_due_for_message(number):
             continue
 
+        variacao = max(5, int(number.intervalSeconds * 0.1))
+
+        delay = random_delay_seconds(
+            min_seconds=max(1, number.intervalSeconds - variacao),
+            max_seconds=number.intervalSeconds + variacao,
+        )
+
+        if (
+            number.warmupFinishAt is not None
+            and datetime.now(timezone.utc) + timedelta(seconds=delay)
+            >= number.warmupFinishAt
+        ):
+            continue
+
         message = await warmup_service.prepare_next_message(number)
 
         if message is None:
@@ -36,13 +50,6 @@ async def run_scheduling_cycle(redis_pool: ArqRedis) -> int:
                 f"[scheduler] {number.phone} sem parceiro disponível, pulando"
             )
             continue
-
-        variacao = max(5, int(number.intervalSeconds * 0.1))
-
-        delay = random_delay_seconds(
-            min_seconds=max(1, number.intervalSeconds - variacao),
-            max_seconds=number.intervalSeconds + variacao,
-        )
 
         await redis_pool.enqueue_job(
             "send_message_job",
