@@ -9,6 +9,7 @@ from src.utils.logger import logger
 
 
 _instance_creation_locks: dict[str, asyncio.Lock] = {}
+_pending_status_locks: dict[str, asyncio.Lock] = {}
 
 
 def _node_config(node_name: str):
@@ -44,7 +45,7 @@ async def _create_session_locked(
     await number_repository.get_or_create_node(
         node_cfg.name, node_cfg.base_url, node_cfg.api_key
     )
-    instance_name = f"esquenta-{phone}"
+    instance_name = phone
     evolution = EvolutionGoService(node_cfg.base_url, node_cfg.api_key)
     try:
         try:
@@ -59,14 +60,8 @@ async def _create_session_locked(
             )
             if not instance_exists:
                 raise
-            try:
-                await evolution.delete_instance(instance_name)
-            except EvolutionGoError as delete_error:
-                if delete_error.status_code != 404:
-                    raise
-            await evolution.create_instance(
-                instance_name,
-                phone if connection_method == "code" else None,
+            logger.info(
+                f"[instance] {instance_name} ja existe; reutilizando para pareamento"
             )
     except EvolutionGoError as exc:
         logger.error(f"[instance] falha ao criar {instance_name}: {exc}")
@@ -93,6 +88,20 @@ async def get_pending_status(
     phone: str,
     node_name: str,
     connection_method: str = "qr",
+):
+    lock_key = f"{node_name}:{session_name}"
+    status_lock = _pending_status_locks.setdefault(lock_key, asyncio.Lock())
+    async with status_lock:
+        return await _get_pending_status_locked(
+            session_name, phone, node_name, connection_method
+        )
+
+
+async def _get_pending_status_locked(
+    session_name: str,
+    phone: str,
+    node_name: str,
+    connection_method: str,
 ):
     phone = normalize_phone(phone)
     node_cfg = _node_config(node_name)

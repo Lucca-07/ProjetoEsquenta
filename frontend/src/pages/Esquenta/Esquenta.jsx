@@ -68,6 +68,8 @@ export default function Esquenta() {
     const [connectionMethod, setConnectionMethod] = useState("qr");
     const [conectarErro, setConectarErro] = useState(null);
     const pollRef = useRef(null);
+    const pollingPendingRef = useRef(false);
+    const qrPollAttemptsRef = useRef(0);
 
     const progressoMedio = numeros.length
         ? Math.round(
@@ -252,6 +254,10 @@ export default function Esquenta() {
     }
 
     async function iniciarConexao(metodo = "qr") {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+        pollingPendingRef.current = false;
+        qrPollAttemptsRef.current = 0;
         if (!telefone.trim()) {
             setConectarErro("Informe o número com DDI e DDD.");
             return;
@@ -276,6 +282,8 @@ export default function Esquenta() {
                 setPairingCode(response.code);
             }
             pollRef.current = setInterval(async () => {
+                if (pollingPendingRef.current) return;
+                pollingPendingRef.current = true;
                 try {
                     const status = await sessionsApi.getPendingStatus(
                         pending.session_name,
@@ -285,6 +293,16 @@ export default function Esquenta() {
                     );
                     if (metodo === "qr" && status.qr) {
                         setQrValue(status.qr);
+                        qrPollAttemptsRef.current = 0;
+                    } else if (metodo === "qr") {
+                        qrPollAttemptsRef.current += 1;
+                        if (qrPollAttemptsRef.current >= 12) {
+                            clearInterval(pollRef.current);
+                            pollRef.current = null;
+                            setConectarErro(
+                                "A Evolution Go não gerou o QR Code em 60 segundos. Volte e tente novamente.",
+                            );
+                        }
                     }
                     if (status.status === "WORKING") {
                         clearInterval(pollRef.current);
@@ -297,8 +315,10 @@ export default function Esquenta() {
                     }
                 } catch (requestError) {
                     setConectarErro(requestError.message);
+                } finally {
+                    pollingPendingRef.current = false;
                 }
-            }, 3000);
+            }, 5000);
         } catch (requestError) {
             setConectarErro(requestError.message);
             setConectando(false);
@@ -381,6 +401,7 @@ export default function Esquenta() {
 
     function fecharModal() {
         clearInterval(pollRef.current);
+        pollingPendingRef.current = false;
         setHidden(true);
         setConectando(false);
         setQrValue(null);
@@ -452,6 +473,9 @@ export default function Esquenta() {
                                 className="card-voltar"
                                 onClick={() => {
                                     clearInterval(pollRef.current);
+                                    pollRef.current = null;
+                                    pollingPendingRef.current = false;
+                                    qrPollAttemptsRef.current = 0;
                                     setConectando(false);
                                     setQrValue(null);
                                     setPairingCode(null);

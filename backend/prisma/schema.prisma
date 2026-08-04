@@ -9,7 +9,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Servidor fisico que hospeda instancias Evolution Go (ex: kvm8-1, kvm8-2)
+// No Evolution Go que hospeda as instancias desta KVM-8.
 model User {
   id           String   @id @default(uuid())
   name         String

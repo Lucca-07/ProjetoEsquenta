@@ -275,15 +275,16 @@ As rotas protegidas esperam o token retornado pelo login:
 Authorization: Bearer <token>
 ```
 
-## Deploy em dois servidores
+## Deploy em uma KVM-8
 
-O arquivo `backend/docker-compose.server2.yml` inicia um segundo no Evolution Go e seu banco. Depois de executa-lo, inclua esse no em `EVOLUTION_GO_NODES` no servidor principal:
+O Compose principal executa API, worker, Redis, banco da aplicacao, Evolution Go e o banco da Evolution na mesma KVM-8:
 
-```env
-EVOLUTION_GO_NODES=[{"name":"kvm8-1","base_url":"http://evolution-go-node1:8080","api_key":"CHAVE_1"},{"name":"kvm8-2","base_url":"http://IP_PRIVADO_DO_SERVIDOR_2:8080","api_key":"CHAVE_2"}]
+```bash
+cd backend
+docker compose up -d --build
 ```
 
-Proteja as portas, prefira uma rede privada ou VPN entre os servidores e nunca publique PostgreSQL, Redis ou Evolution Go sem autenticacao e regras de firewall.
+Todos os numeros usam o no `kvm8-1`, configurado em `EVOLUTION_GO_NODES`. Proteja as portas e nunca publique PostgreSQL, Redis ou Evolution Go sem autenticacao e regras de firewall.
 
 ## Colaboradores
 
