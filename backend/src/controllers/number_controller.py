@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from time import monotonic
 
 from src.repositories import number_repository, warmup_group_repository
-from src.services.waha_service import WahaError, WahaService
+from src.services.evolution_service import EvolutionError, EvolutionService
 from src.utils.logger import logger
 
 
@@ -140,20 +140,19 @@ async def _refresh_all_session_statuses(numbers) -> None:
 
 
 async def _refresh_session_status(number) -> None:
-    waha = WahaService(number.node.baseUrl, number.node.apiKey)
+    evolution = EvolutionService(number.node.baseUrl, number.node.apiKey)
     try:
-        status_data = await waha.get_session_status(number.sessionName)
-        status = status_data.get("status", number.status)
+        status = await evolution.get_instance_status(number.sessionName)
         if status != number.status:
             await number_repository.update_status(number.id, status)
             number.status = status
-    except WahaError as exc:
+    except EvolutionError as exc:
         logger.warning(
             f"[session] Não foi possível atualizar o status de "
             f"{number.phone}: {exc}"
         )
     finally:
-        await waha.close()
+        await evolution.close()
 
 
 async def get_summary():

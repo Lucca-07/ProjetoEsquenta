@@ -1,10 +1,10 @@
 from src.utils.spintax import parse_spintax, random_warmup_message
-from src.utils.random_utils import random_delay_seconds, is_within_working_hours
+from src.utils.random_utils import random_delay_seconds
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 from src.jobs.message_job import _warmup_is_active
-from src.services.waha_service import extract_message_id, phone_to_chat_id
+from src.services.evolution_service import extract_message_id, normalize_phone
 
 
 def test_spintax_resolves_single_option():
@@ -31,13 +31,6 @@ def test_random_delay_within_bounds():
     assert 10 <= delay <= 20
 
 
-def test_working_hours_check():
-    inside = datetime(2026, 1, 1, 12, 0)
-    outside = datetime(2026, 1, 1, 3, 0)
-    assert is_within_working_hours(inside) is True
-    assert is_within_working_hours(outside) is False
-
-
 def test_stopped_warmup_is_not_active_for_queued_message():
     number = SimpleNamespace(
         active=False,
@@ -59,19 +52,8 @@ def test_running_warmup_is_active_for_queued_message():
     assert _warmup_is_active(number) is True
 
 
-def test_extracts_serialized_id_from_waha_object():
-    result = {
-        "id": {
-            "fromMe": True,
-            "id": "ABC123",
-            "_serialized": "true_5511999999999@c.us_ABC123",
-        }
-    }
-
-    assert (
-        extract_message_id(result)
-        == "true_5511999999999@c.us_ABC123"
-    )
+def test_extracts_message_id_from_evolution_key():
+    assert extract_message_id({"key": {"id": "ABC123"}}) == "ABC123"
 
 
 def test_keeps_string_message_id():
@@ -79,8 +61,8 @@ def test_keeps_string_message_id():
 
 
 def test_adds_brazil_country_code_to_local_phone():
-    assert phone_to_chat_id("11 95360-8050") == "5511953608050@c.us"
+    assert normalize_phone("11 95360-8050") == "5511953608050"
 
 
 def test_preserves_phone_that_already_has_country_code():
-    assert phone_to_chat_id("55 11 95360-8050") == "5511953608050@c.us"
+    assert normalize_phone("55 11 95360-8050") == "5511953608050"

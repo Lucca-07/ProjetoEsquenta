@@ -5,10 +5,12 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config.index import settings
+from src.config.evolution import evolution_nodes
 from src.config.redis import redis_settings
 from src.db import connect_db, disconnect_db
 from src.middlewares.error_middleware import register_error_handlers
 from src.repositories.phrase_repository import seed_default_phrases
+from src.repositories.number_repository import sync_configured_nodes
 from src.routes import (
     auth_routes,
     dashboard_log_routes,
@@ -27,6 +29,7 @@ from src.utils.logger import configure_logging, logger
 async def lifespan(app: FastAPI):
     configure_logging()
     await connect_db()
+    await sync_configured_nodes(evolution_nodes)
     await ensure_initial_admin()
     seeded = await seed_default_phrases()
     if seeded:

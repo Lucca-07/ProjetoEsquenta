@@ -4,7 +4,6 @@ from src.config.index import settings
 from src.repositories import number_repository, warmup_log_repository, phrase_repository
 from src.services import pairing_service
 from src.utils.logger import logger
-from src.utils.random_utils import is_within_working_hours
 from src.utils.spintax import random_warmup_message
 
 
@@ -44,8 +43,6 @@ async def advance_day_if_needed(number) -> object:
 
 async def is_number_due_for_message(number) -> bool:
     if not number.active or number.status != "WORKING":
-        return False
-    if not is_within_working_hours():
         return False
     if await warmup_log_repository.count_pending_for_sender(number.id) > 0:
         return False

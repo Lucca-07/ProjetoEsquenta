@@ -3,11 +3,10 @@ from datetime import datetime, timezone
 from src.db import connect_db
 from src.repositories import warmup_log_repository, number_repository
 from src.services import warmup_service
-from src.services.waha_service import (
-    WahaError,
-    build_waha_service_for_node,
+from src.services.evolution_service import (
+    EvolutionError,
+    build_evolution_service_for_node,
     extract_message_id,
-    phone_to_chat_id,
 )
 from src.utils.logger import logger
 
@@ -22,7 +21,7 @@ def _warmup_is_active(number) -> bool:
 
 
 async def send_message_job(ctx, message_id: str, warmup_day: int):
-    """Envia uma mensagem PENDING via WAHA, usando o nó (servidor) correto
+    """Envia uma mensagem PENDING via Evolution, usando o no correto
     do número remetente, e atualiza status/log."""
     await connect_db()
 
@@ -52,17 +51,18 @@ async def send_message_job(ctx, message_id: str, warmup_day: int):
         )
         return
 
-    waha = await build_waha_service_for_node(sender.node)
+    evolution = await build_evolution_service_for_node(sender.node)
     try:
-        chat_id = phone_to_chat_id(receiver.phone)
-        result = await waha.send_text_message(sender.sessionName, chat_id, message.content)
+        result = await evolution.send_text_message(
+            sender.sessionName, receiver.phone, message.content
+        )
         wa_message_id = extract_message_id(result)
         await warmup_log_repository.mark_message_sent(message_id, wa_message_id)
         await warmup_service.register_send_result(sender.id, warmup_day, success=True)
         logger.info(f"[message_job] {sender.phone} -> {receiver.phone} enviado (day={warmup_day})")
-    except WahaError as exc:
+    except EvolutionError as exc:
         await warmup_log_repository.mark_message_failed(message_id, str(exc))
         await warmup_service.register_send_result(sender.id, warmup_day, success=False, detail=str(exc))
         logger.error(f"[message_job] falha ao enviar {sender.phone} -> {receiver.phone}: {exc}")
     finally:
-        await waha.close()
+        await evolution.close()

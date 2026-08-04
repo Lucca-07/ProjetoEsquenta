@@ -8,7 +8,7 @@ Plataforma web para conectar, organizar e aquecer números de WhatsApp de forma 
 
 - Autenticação com token e controle de acesso por perfil (`ADMIN` e `USER`);
 - conexão de números por QR Code ou código de pareamento;
-- acompanhamento do estado das sessões WAHA;
+- acompanhamento do estado das instancias Evolution;
 - criação de grupos de aquecimento com múltiplos números;
 - configuração de intervalo entre mensagens e duração do aquecimento;
 - início, pausa e encerramento individual ou em lote;
@@ -16,7 +16,7 @@ Plataforma web para conectar, organizar e aquecer números de WhatsApp de forma 
 - escolha automática dos pares que conversam entre si;
 - geração de mensagens variadas a partir de frases em formato spintax;
 - agendamento e processamento assíncrono de mensagens com Redis e ARQ;
-- distribuição das sessões entre diferentes nós WAHA;
+- distribuicao das instancias entre diferentes nos Evolution;
 - painel com números conectados, em aquecimento e concluídos;
 - busca, ordenação e seleção em lote de números;
 - histórico de mensagens e grupos, com filtros por período, telefone e status;
@@ -26,15 +26,15 @@ Plataforma web para conectar, organizar e aquecer números de WhatsApp de forma 
 
 ## Tecnologias
 
-| Camada | Tecnologias |
-| --- | --- |
-| Frontend | React 19, Vite 8, React Router e React Icons |
-| API | Python 3.12, FastAPI, Pydantic e Uvicorn |
-| Persistência | PostgreSQL e Prisma Client Python |
-| Filas e tarefas | Redis e ARQ |
-| WhatsApp | WAHA (WhatsApp HTTP API) |
-| Infraestrutura | Docker e Docker Compose |
-| Testes | Pytest e Pytest Asyncio |
+| Camada          | Tecnologias                                  |
+| --------------- | -------------------------------------------- |
+| Frontend        | React 19, Vite 8, React Router e React Icons |
+| API             | Python 3.12, FastAPI, Pydantic e Uvicorn     |
+| Persistência    | PostgreSQL e Prisma Client Python            |
+| Filas e tarefas | Redis e ARQ                                  |
+| WhatsApp        | Evolution API v2 (WhatsApp/Baileys)          |
+| Infraestrutura  | Docker e Docker Compose                      |
+| Testes          | Pytest e Pytest Asyncio                      |
 
 ## Arquitetura
 
@@ -47,15 +47,15 @@ API FastAPI ─────────────── PostgreSQL
       ├──────── Redis/ARQ
       │          filas, scheduler e workers
       ▼
-Nós WAHA (um ou mais)
+Nos Evolution (um ou mais)
       │
       ▼
 Sessões do WhatsApp
 ```
 
-O scheduler verifica periodicamente os aquecimentos ativos. Dentro da janela de funcionamento configurada, ele seleciona remetente e destinatário, escolhe uma frase, processa o spintax e agenda o envio com um atraso aleatório. O worker envia a mensagem pelo nó WAHA associado ao número e registra o resultado no banco.
+O scheduler verifica periodicamente os aquecimentos ativos. Dentro da janela de funcionamento configurada, ele seleciona remetente e destinatario, escolhe uma frase, processa o spintax e agenda o envio com um atraso aleatorio. O worker envia a mensagem pelo no Evolution associado ao numero e registra o resultado no banco.
 
-O repositório também contém uma configuração de produção em dois servidores: o primeiro executa API, PostgreSQL, Redis, worker e um nó WAHA; o segundo hospeda outro nó WAHA para distribuir as sessões.
+O repositorio tambem contem uma configuracao de producao em dois servidores: o primeiro executa API, PostgreSQL, Redis, worker e um no Evolution; o segundo hospeda outro no Evolution para distribuir as instancias.
 
 ## Estrutura do projeto
 
@@ -64,7 +64,7 @@ ProjetoEsquenta/
 ├── backend/
 │   ├── prisma/             # Schema do banco de dados
 │   ├── src/
-│   │   ├── config/         # Configurações da aplicação, Redis e WAHA
+│   │   ├── config/         # Configuracoes da aplicacao, Redis e Evolution
 │   │   ├── controllers/    # Regras de entrada e saída da API
 │   │   ├── jobs/           # Tarefas executadas pelo ARQ
 │   │   ├── models/         # Schemas de validação
@@ -120,21 +120,18 @@ POSTGRES_PASSWORD=esquenta_local
 DATABASE_URL=postgresql://esquenta:esquenta_local@postgres:5432/esquenta
 REDIS_URL=redis://redis:6379/0
 
-WAHA_NODE1_API_KEY=troque-esta-chave
-WAHA_NODES=[{"name":"kvm8-1","base_url":"http://waha-node1:3000","api_key":"troque-esta-chave"}]
+EVOLUTION_NODE1_API_KEY=troque-esta-chave
+EVOLUTION_DB_PASSWORD=troque-esta-senha
+EVOLUTION_NODES=[{"name":"kvm8-1","base_url":"http://evolution-node1:8080","api_key":"troque-esta-chave"}]
 
 WARMUP_START_MESSAGES=5
 WARMUP_INCREMENT=4
 WARMUP_MAX_MESSAGES=120
 WARMUP_MAX_DAYS=30
-WORK_HOUR_START=8
-WORK_HOUR_END=22
-MESSAGE_MIN_DELAY_SECONDS=45
-MESSAGE_MAX_DELAY_SECONDS=240
 SCHEDULER_INTERVAL_SECONDS=60
 ```
 
-Troque as credenciais antes de disponibilizar a aplicação em uma rede. O valor de `api_key` em `WAHA_NODES` deve ser igual a `WAHA_NODE1_API_KEY`.
+Troque as credenciais antes de disponibilizar a aplicacao em uma rede. O valor de `api_key` em `EVOLUTION_NODES` deve ser igual a `EVOLUTION_NODE1_API_KEY`.
 
 ### 3. Suba o backend e os serviços
 
@@ -149,7 +146,7 @@ Esse comando inicia:
 - documentação Swagger em `http://localhost:8000/docs`;
 - PostgreSQL na porta local `5433`;
 - Redis na porta `6379`;
-- WAHA em `http://localhost:3000`;
+- Evolution API em `http://localhost:8080`;
 - worker responsável pelas tarefas agendadas.
 
 Confira se a API está saudável:
@@ -165,7 +162,7 @@ docker compose logs -f api worker
 docker compose down
 ```
 
-Use `docker compose down -v` somente se também quiser apagar os dados locais do PostgreSQL, Redis e as sessões WAHA.
+Use `docker compose down -v` somente se tambem quiser apagar os dados locais do PostgreSQL, Redis e as instancias Evolution.
 
 ### 4. Inicie o frontend
 
@@ -194,7 +191,7 @@ Altere esses dados no `.env` antes do primeiro start em qualquer ambiente compar
 
 ## Execução manual do backend
 
-Se preferir executar a API fora do Docker, tenha PostgreSQL, Redis e uma instância WAHA acessíveis e ajuste as URLs do `.env` para `localhost`. No PowerShell:
+Se preferir executar a API fora do Docker, tenha PostgreSQL, Redis e uma Evolution API acessiveis e ajuste as URLs do `.env` para `localhost`. No PowerShell:
 
 ```powershell
 cd backend
@@ -219,7 +216,7 @@ Para essa modalidade, use URLs como estas no `backend/.env`:
 ```env
 DATABASE_URL=postgresql://esquenta:esquenta_local@localhost:5433/esquenta
 REDIS_URL=redis://localhost:6379/0
-WAHA_NODES=[{"name":"kvm8-1","base_url":"http://localhost:3000","api_key":"troque-esta-chave"}]
+EVOLUTION_NODES=[{"name":"kvm8-1","base_url":"http://localhost:8080","api_key":"troque-esta-chave"}]
 ```
 
 ## Uso básico
@@ -234,17 +231,13 @@ WAHA_NODES=[{"name":"kvm8-1","base_url":"http://localhost:3000","api_key":"troqu
 
 ## Configuração da rampa
 
-| Variável | Padrão | Descrição |
-| --- | ---: | --- |
-| `WARMUP_START_MESSAGES` | `5` | Meta de mensagens no primeiro dia |
-| `WARMUP_INCREMENT` | `4` | Quantidade adicionada à meta a cada dia |
-| `WARMUP_MAX_MESSAGES` | `120` | Limite diário por número |
-| `WARMUP_MAX_DAYS` | `30` | Dias até considerar o número aquecido |
-| `WORK_HOUR_START` | `8` | Início da janela de funcionamento |
-| `WORK_HOUR_END` | `22` | Fim da janela de funcionamento |
-| `MESSAGE_MIN_DELAY_SECONDS` | `45` | Menor atraso aleatório entre envios |
-| `MESSAGE_MAX_DELAY_SECONDS` | `240` | Maior atraso aleatório entre envios |
-| `SCHEDULER_INTERVAL_SECONDS` | `60` | Frequência de verificação do scheduler |
+| Variável                     | Padrão | Descrição                               |
+| ---------------------------- | -----: | --------------------------------------- |
+| `WARMUP_START_MESSAGES`      |    `5` | Meta de mensagens no primeiro dia       |
+| `WARMUP_INCREMENT`           |    `4` | Quantidade adicionada à meta a cada dia |
+| `WARMUP_MAX_MESSAGES`        |  `120` | Limite diário por número                |
+| `WARMUP_MAX_DAYS`            |   `30` | Dias até considerar o número aquecido   |
+| `SCHEDULER_INTERVAL_SECONDS` |   `60` | Frequência de verificação do scheduler  |
 
 ## Testes e qualidade
 
@@ -267,16 +260,16 @@ npm run build
 
 Com o backend em execução, a especificação interativa completa fica disponível em `/docs`. Os principais grupos de endpoints são:
 
-| Prefixo | Responsabilidade |
-| --- | --- |
-| `/api/auth` | Login, usuário atual e gestão de usuários |
+| Prefixo         | Responsabilidade                                        |
+| --------------- | ------------------------------------------------------- |
+| `/api/auth`     | Login, usuário atual e gestão de usuários               |
 | `/api/sessions` | Criação, pareamento, consulta e encerramento de sessões |
-| `/api/numbers` | Listagem e resumo dos números |
-| `/api/warmup` | Início, pausa, encerramento e logs do aquecimento |
-| `/api/messages` | Envio e histórico de mensagens |
-| `/api/phrases` | Cadastro e manutenção das frases spintax |
-| `/api/logs` | Dashboard administrativo e histórico |
-| `/health` | Estado básico da API |
+| `/api/numbers`  | Listagem e resumo dos números                           |
+| `/api/warmup`   | Início, pausa, encerramento e logs do aquecimento       |
+| `/api/messages` | Envio e histórico de mensagens                          |
+| `/api/phrases`  | Cadastro e manutenção das frases spintax                |
+| `/api/logs`     | Dashboard administrativo e histórico                    |
+| `/health`       | Estado básico da API                                    |
 
 As rotas protegidas esperam o token retornado pelo login:
 
@@ -286,18 +279,19 @@ Authorization: Bearer <token>
 
 ## Deploy em dois servidores
 
-O arquivo `backend/docker-compose.server2.yml` inicia apenas um segundo nó WAHA. Depois de executá-lo no servidor secundário, inclua esse nó no `WAHA_NODES` do servidor principal:
+O arquivo `backend/docker-compose.server2.yml` inicia um segundo no Evolution e seus servicos de dados. Depois de executa-lo, inclua esse no em `EVOLUTION_NODES` no servidor principal:
 
 ```env
-WAHA_NODES=[{"name":"kvm8-1","base_url":"http://waha-node1:3000","api_key":"CHAVE_1"},{"name":"kvm8-2","base_url":"http://IP_PRIVADO_DO_SERVIDOR_2:3000","api_key":"CHAVE_2"}]
+EVOLUTION_NODES=[{"name":"kvm8-1","base_url":"http://evolution-node1:8080","api_key":"CHAVE_1"},{"name":"kvm8-2","base_url":"http://IP_PRIVADO_DO_SERVIDOR_2:8080","api_key":"CHAVE_2"}]
 ```
 
-Proteja as portas, prefira uma rede privada ou VPN entre os servidores e nunca publique PostgreSQL, Redis ou WAHA sem autenticação e regras de firewall.
+Proteja as portas, prefira uma rede privada ou VPN entre os servidores e nunca publique PostgreSQL, Redis ou Evolution sem autenticacao e regras de firewall.
 
 ## Colaboradores
 
-- [Lucca Rodrigues](https://github.com/Lucca-07) — desenvolvimento do projeto;
-- David Ferreira — desenvolvimento do projeto.
+- [Lucca Rodrigues](https://github.com/Lucca-07) — Desenvolvimento do projeto;
+- [David Ferreira](https://github.com/FerreiraHub) — Desenvolvimento do projeto.
+- [Luiz Gustavo](https://github.com/SrLgart) - Prototipação do projeto
 
 Os nomes foram consolidados a partir do histórico de commits do repositório.
 

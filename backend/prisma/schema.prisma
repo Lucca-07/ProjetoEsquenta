@@ -9,7 +9,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Servidor físico que hospeda instâncias WAHA (ex: kvm8-1, kvm8-2)
+// Servidor fisico que hospeda instancias Evolution (ex: kvm8-1, kvm8-2)
 model User {
   id           String   @id @default(uuid())
   name         String
@@ -21,7 +21,7 @@ model User {
   updatedAt    DateTime @updatedAt
 }
 
-model WahaNode {
+model EvolutionNode {
   id        String   @id @default(uuid())
   name      String   @unique
   baseUrl   String
@@ -30,6 +30,9 @@ model WahaNode {
   createdAt DateTime @default(now())
 
   numbers Number[]
+
+  // Keep the existing physical table so deployments retain their node data.
+  @@map("WahaNode")
 }
 
 // Um número/chip de WhatsApp gerenciado pelo sistema
@@ -38,7 +41,7 @@ model Number {
   phone       String   @unique
   sessionName String   @unique
   nodeId      String
-  node        WahaNode @relation(fields: [nodeId], references: [id])
+  node        EvolutionNode @relation(fields: [nodeId], references: [id])
 
   status String  @default("STARTING") // STARTING, SCAN_QR_CODE, WORKING, FAILED, STOPPED
   active Boolean @default(true)

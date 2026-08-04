@@ -1,89 +1,68 @@
-# Esquenta Backend — Sistema de Aquecimento de Números
+# Esquenta Backend
 
-Backend em Python (FastAPI + Prisma/Postgres + Redis + arq) que orquestra o
-aquecimento gradual de números de WhatsApp via [WAHA](https://waha.devlike.pro/),
-distribuído em dois servidores KVM8 da Hostinger.
+Backend FastAPI que orquestra o aquecimento gradual de numeros de WhatsApp por
+meio da [Evolution API](https://doc.evolution-api.com/), com Prisma/PostgreSQL,
+Redis e workers `arq`.
 
 ## Arquitetura
 
-- **Servidor 1**: API (FastAPI), Postgres, Redis, workers `arq` (fila +
-  cron) e uma instância WAHA local (`waha-node1`) hospedando uma **menor
-  parte** dos números.
-- **Servidor 2**: apenas instância(s) WAHA (`waha-node2`), hospedando o
-  **restante** dos números. A API no Servidor 1 fala com ela via HTTP.
+- Servidor 1: API, banco do Esquenta, Redis, workers e `evolution-node1`.
+- Servidor 2: `evolution-node2`, PostgreSQL e Redis exclusivos da Evolution.
+- Cada numero pertence a um `EvolutionNode`, permitindo distribuir instancias
+  entre os dois servidores.
 
-Cada `Number` (chip) fica associado a um `WahaNode` no banco — o backend
-escolhe automaticamente qual servidor WAHA usar para cada envio.
+A API interna do Esquenta mantem os termos `session_name` e `node_name` para
+compatibilidade com o frontend. Na Evolution, cada sessao corresponde a uma
+instancia `WHATSAPP-BAILEYS`.
 
-## Como funciona o aquecimento
+## Configuracao
 
-1. Cada número começa com uma meta diária pequena (`WARMUP_START_MESSAGES`),
-   que cresce (`WARMUP_INCREMENT`/dia) até um teto (`WARMUP_MAX_MESSAGES`),
-   ao longo de `WARMUP_MAX_DAYS`.
-2. A cada minuto (cron do `arq`), o `scheduler_service` verifica todos os
-   números ativos, avança o dia quando necessário e — se ainda não bateu a
-   meta diária — escolhe um parceiro (`pairing_service`), gera um texto via
-   spintax e agenda o envio com um atraso aleatório
-   (`MESSAGE_MIN/MAX_DELAY_SECONDS`), só dentro do horário comercial
-   configurado (`WORK_HOUR_START/END`).
-3. O job `send_message_job` efetivamente dispara a mensagem pelo nó WAHA
-   correto e registra o resultado (`Message` + `WarmupLog`).
+Copie `.env.example` para `.env` e configure:
+
+```env
+EVOLUTION_IMAGE=evoapicloud/evolution-api:v2.3.7
+EVOLUTION_NODE1_API_KEY=troque-esta-chave
+EVOLUTION_DB_PASSWORD=troque-esta-senha
+EVOLUTION_NODES=[{"name":"kvm8-1","base_url":"http://evolution-node1:8080","api_key":"troque-esta-chave"},{"name":"kvm8-2","base_url":"http://IP_PRIVADO_SERVIDOR_2:8080","api_key":"troque-esta-chave-2"}]
+```
+
+O `api_key` de cada item em `EVOLUTION_NODES` deve ser igual ao
+`AUTHENTICATION_API_KEY` do respectivo servidor Evolution.
 
 ## Deploy
 
-### 1. Servidor 2 (só WAHA)
+No Servidor 2:
 
 ```bash
-scp docker-compose.server2.yml usuario@SERVIDOR_2:/opt/esquenta/
-ssh usuario@SERVIDOR_2
-cd /opt/esquenta
 docker compose -f docker-compose.server2.yml up -d
 ```
 
-Anote o IP público (ou da VPN/rede privada) do Servidor 2.
-
-### 2. Servidor 1 (tudo mais)
+No Servidor 1:
 
 ```bash
-cp .env.example .env
-# edite .env: DATABASE_URL, REDIS_URL, WAHA_NODES (kvm8-2 -> IP do Servidor 2), etc.
 docker compose up -d --build
 ```
 
-O serviço `api` roda `prisma db push` automaticamente no start para criar as
-tabelas. Em produção, prefira gerar migrations (`prisma migrate deploy`) em
-vez de `db push`.
+A Evolution usa banco e Redis proprios. Eles nao devem compartilhar o banco da
+aplicacao. A porta HTTP padrao usada nos arquivos Compose e `8080`.
 
-### 3. Registrar os números
+## Fluxo de conexao
 
-```bash
-# Cria a sessão no nó kvm8-1 (local) ou kvm8-2 (remoto)
-curl -X POST http://SERVIDOR_1:8000/api/sessions \
-  -H "Content-Type: application/json" \
-  -d '{"phone": "5511999999999", "node_name": "kvm8-1"}'
+1. `POST /api/sessions` cria uma instancia Evolution.
+2. O frontend consulta `/api/sessions/pending/{session_name}/status`.
+3. O backend converte `open`, `connecting` e `close` nos estados internos.
+4. QR Code ou codigo por telefone e obtido pelo endpoint `instance/connect`.
+5. Depois de conectado, os workers enviam por `message/sendText`.
 
-# Escaneie o QR code
-curl http://SERVIDOR_1:8000/api/sessions/{id}/status
+As credenciais antigas do WAHA nao sao compativeis. Numeros existentes precisam
+ser pareados novamente na Evolution.
 
-# Ative o aquecimento
-curl -X POST http://SERVIDOR_1:8000/api/warmup/{id}/start
-```
-
-## Rodando localmente / testes
+## Testes
 
 ```bash
-pip install -r requirements.txt --break-system-packages
+pip install -r requirements.txt
 prisma generate
 pytest
 ```
 
-Os testes em `tests/` cobrem apenas lógica pura (spintax, curva de rampa,
-validação de schema) — não exigem Postgres/Redis/WAHA rodando.
-
-## Ajustando a rampa de aquecimento
-
-Todos os parâmetros ficam no `.env` (`WARMUP_START_MESSAGES`,
-`WARMUP_INCREMENT`, `WARMUP_MAX_MESSAGES`, `WARMUP_MAX_DAYS`,
-`WORK_HOUR_START/END`, `MESSAGE_MIN/MAX_DELAY_SECONDS`,
-`SCHEDULER_INTERVAL_SECONDS`) — não é necessário alterar código para
-recalibrar a velocidade do aquecimento.
+Os testes unitarios nao exigem Evolution, PostgreSQL ou Redis em execucao.

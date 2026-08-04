@@ -128,12 +128,22 @@ async def increment_daily_sent(number_id: str, amount: int = 1):
 
 
 async def get_or_create_node(name: str, base_url: str, api_key: str | None = None):
-    node = await db.wahanode.find_unique(where={"name": name})
+    node = await db.evolutionnode.find_unique(where={"name": name})
     if node:
+        if node.baseUrl != base_url or node.apiKey != api_key:
+            return await db.evolutionnode.update(
+                where={"id": node.id},
+                data={"baseUrl": base_url, "apiKey": api_key, "isActive": True},
+            )
         return node
-    return await db.wahanode.create(
+    return await db.evolutionnode.create(
         data={"name": name, "baseUrl": base_url, "apiKey": api_key}
     )
+
+
+async def sync_configured_nodes(nodes) -> None:
+    for node in nodes:
+        await get_or_create_node(node.name, node.base_url, node.api_key)
 
 
 async def update_warmup_config(

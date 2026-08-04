@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 class SessionCreate(BaseModel):
     phone: str = Field(..., description="Número no formato internacional, ex: 5511999999999")
-    node_name: str = Field(..., description="Nome do nó WAHA onde a sessão será criada (ex: kvm8-1)")
+    node_name: str = Field(..., description="Nome do no Evolution onde a instancia sera criada (ex: kvm8-1)")
 
 
 class SessionResponse(BaseModel):

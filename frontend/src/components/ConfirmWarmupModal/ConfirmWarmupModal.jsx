@@ -83,6 +83,7 @@ export default function ConfirmWarmupModal({
                         type="number"
                         value={intervalo}
                         min={10}
+                        max={3600}
                         onChange={(event) =>
                             setIntervalo(Number(event.target.value))
                         }
