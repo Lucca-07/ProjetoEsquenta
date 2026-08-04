@@ -19,43 +19,40 @@ services:
     ports:
       - "6379:6379"
 
-  evolution-postgres:
+  evolution-go-postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: evolution
-      POSTGRES_PASSWORD: ${EVOLUTION_DB_PASSWORD:-CHANGE_ME}
-      POSTGRES_DB: evolution
+      POSTGRES_PASSWORD: ${EVOLUTION_GO_DB_PASSWORD:-CHANGE_ME}
+      POSTGRES_DB: postgres
     volumes:
-      - evolution_postgres_data:/var/lib/postgresql/data
+      - evolution_go_postgres_data:/var/lib/postgresql/data
+      - ./evolution-go-init.sql:/docker-entrypoint-initdb.d/evolution-go-init.sql:ro
 
-  evolution-redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    volumes:
-      - evolution_redis_data:/data
-
-  evolution-node1:
-    image: ${EVOLUTION_IMAGE:-evoapicloud/evolution-api:v2.3.7}
+  evolution-go-node1:
+    image: ${EVOLUTION_GO_IMAGE:-evoapicloud/evolution-go:0.7.2}
     restart: unless-stopped
     depends_on:
-      - evolution-postgres
-      - evolution-redis
+      - evolution-go-postgres
     environment:
-      SERVER_URL: ${EVOLUTION_NODE1_PUBLIC_URL:-http://localhost:8080}
-      AUTHENTICATION_API_KEY: ${EVOLUTION_NODE1_API_KEY:-CHANGE_ME}
-      DATABASE_ENABLED: "true"
-      DATABASE_PROVIDER: postgresql
-      DATABASE_CONNECTION_URI: postgresql://evolution:${EVOLUTION_DB_PASSWORD:-CHANGE_ME}@evolution-postgres:5432/evolution
-      DATABASE_CONNECTION_CLIENT_NAME: esquenta-node1
-      DATABASE_SAVE_DATA_INSTANCE: "true"
-      DATABASE_SAVE_DATA_NEW_MESSAGE: "false"
-      DATABASE_SAVE_DATA_CONTACTS: "false"
-      DATABASE_SAVE_DATA_CHATS: "false"
-      CACHE_REDIS_ENABLED: "true"
-      CACHE_REDIS_URI: redis://evolution-redis:6379/6
-      CACHE_LOCAL_ENABLED: "false"
-      QRCODE_LIMIT: "30"
+      SERVER_PORT: "8080"
+      CLIENT_NAME: esquenta-node1
+      GLOBAL_API_KEY: ${EVOLUTION_GO_NODE1_API_KEY:-CHANGE_ME}
+      POSTGRES_AUTH_DB: postgresql://evolution:${EVOLUTION_GO_DB_PASSWORD:-CHANGE_ME}@evolution-go-postgres:5432/evogo_auth?sslmode=disable
+      POSTGRES_USERS_DB: postgresql://evolution:${EVOLUTION_GO_DB_PASSWORD:-CHANGE_ME}@evolution-go-postgres:5432/evogo_users?sslmode=disable
+      DATABASE_SAVE_MESSAGES: "false"
+      CONNECT_ON_STARTUP: "true"
+      WEBHOOK_FILES: "false"
+      MINIO_ENABLED: "false"
+      WADEBUG: INFO
+      LOGTYPE: console
+      OS_NAME: Esquenta
+      QRCODE_MAX_COUNT: "30"
+      EVOLUTION_OPERATOR_EMAIL: ${EVOLUTION_OPERATOR_EMAIL:-}
+    volumes:
+      - evolution_go_data:/app/dbdata
+      - evolution_go_logs:/app/logs
     ports:
       - "8080:8080"
 
@@ -66,7 +63,7 @@ services:
     depends_on:
       - postgres
       - redis
-      - evolution-node1
+      - evolution-go-node1
     command: >
       sh -c "prisma db push && uvicorn src.main:app --host 0.0.0.0 --port 8000"
     ports:
@@ -79,11 +76,12 @@ services:
     depends_on:
       - postgres
       - redis
-      - evolution-node1
+      - evolution-go-node1
     command: ["arq", "src.worker.WorkerSettings"]
 
 volumes:
   postgres_data:
   redis_data:
-  evolution_postgres_data:
-  evolution_redis_data:
+  evolution_go_postgres_data:
+  evolution_go_data:
+  evolution_go_logs:

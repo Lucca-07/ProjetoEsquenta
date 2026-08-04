@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     # Redis / filas
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    # Evolution API (JSON com a lista de nos/servidores)
-    EVOLUTION_NODES: str = "[]"
+    # Evolution Go (JSON com a lista de nos/servidores)
+    EVOLUTION_GO_NODES: str = "[]"
 
     # Segurança simples de API (header X-API-Key)
     API_KEY: str | None = None

@@ -3,9 +3,9 @@ from datetime import datetime, timezone
 from src.db import connect_db
 from src.repositories import warmup_log_repository, number_repository
 from src.services import warmup_service
-from src.services.evolution_service import (
-    EvolutionError,
-    build_evolution_service_for_node,
+from src.services.evolution_go_service import (
+    EvolutionGoError,
+    build_evolution_go_service_for_node,
     extract_message_id,
 )
 from src.utils.logger import logger
@@ -51,7 +51,7 @@ async def send_message_job(ctx, message_id: str, warmup_day: int):
         )
         return
 
-    evolution = await build_evolution_service_for_node(sender.node)
+    evolution = await build_evolution_go_service_for_node(sender.node)
     try:
         result = await evolution.send_text_message(
             sender.sessionName, receiver.phone, message.content
@@ -60,7 +60,7 @@ async def send_message_job(ctx, message_id: str, warmup_day: int):
         await warmup_log_repository.mark_message_sent(message_id, wa_message_id)
         await warmup_service.register_send_result(sender.id, warmup_day, success=True)
         logger.info(f"[message_job] {sender.phone} -> {receiver.phone} enviado (day={warmup_day})")
-    except EvolutionError as exc:
+    except EvolutionGoError as exc:
         await warmup_log_repository.mark_message_failed(message_id, str(exc))
         await warmup_service.register_send_result(sender.id, warmup_day, success=False, detail=str(exc))
         logger.error(f"[message_job] falha ao enviar {sender.phone} -> {receiver.phone}: {exc}")

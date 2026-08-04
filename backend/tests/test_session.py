@@ -3,9 +3,11 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from src.models.session_schema import SessionCreate
-from src.services.evolution_service import (
-    EvolutionError,
-    EvolutionService,
+from src.services.evolution_go_service import (
+    EvolutionGoError,
+    EvolutionGoService,
+    evolution_go_instance_id,
+    evolution_go_instance_token,
     normalize_evolution_status,
     normalize_phone,
 )
@@ -15,10 +17,13 @@ def test_normalize_phone_strips_non_digits():
     assert normalize_phone("+55 (11) 99999-9999") == "5511999999999"
 
 
-def test_session_create_schema_requires_fields():
-    payload = SessionCreate(phone="5511999999999", node_name="kvm8-1")
-    assert payload.phone == "5511999999999"
-    assert payload.node_name == "kvm8-1"
+def test_session_schema_supports_both_connection_methods():
+    default = SessionCreate(phone="5511999999999", node_name="kvm8-1")
+    code = SessionCreate(
+        phone="5511999999999", node_name="kvm8-1", connection_method="code"
+    )
+    assert default.connection_method == "qr"
+    assert code.connection_method == "code"
 
 
 def test_session_create_schema_missing_field_raises():
@@ -26,47 +31,73 @@ def test_session_create_schema_missing_field_raises():
         SessionCreate(phone="5511999999999")
 
 
-def test_evolution_error_preserves_http_status_code():
-    error = EvolutionError("instance already exists", status_code=403)
-    assert error.status_code == 403
+def test_evolution_go_error_preserves_http_status_code():
+    error = EvolutionGoError("instance already exists", status_code=500)
+    assert error.status_code == 500
 
 
-@pytest.mark.parametrize(
-    ("state", "expected"),
-    [
-        ("open", "WORKING"),
-        ("connecting", "SCAN_QR_CODE"),
-        ("close", "STOPPED"),
-        (None, "STARTING"),
-    ],
-)
-def test_normalizes_evolution_state(state, expected):
-    assert normalize_evolution_status(state) == expected
-
-
-async def test_restart_instance_uses_evolution_endpoint():
-    service = EvolutionService("http://evolution")
-    response = MagicMock(content=b"{}")
-    response.json.return_value = {"instance": {"instanceName": "session-test"}}
-    service._request = AsyncMock(return_value=response)
-
-    try:
-        await service.restart_instance("session-test")
-    finally:
-        await service.close()
-
-    assert service._request.await_args_list[0].args[:2] == (
-        "PUT",
-        "/instance/restart/session-test",
+def test_instance_credentials_are_stable_and_distinct():
+    assert evolution_go_instance_id("session-test") == evolution_go_instance_id(
+        "session-test"
+    )
+    assert evolution_go_instance_token("secret", "one") != evolution_go_instance_token(
+        "secret", "two"
     )
 
 
-async def test_send_text_uses_number_without_chat_suffix():
-    service = EvolutionService("http://evolution", "secret")
-    response = MagicMock()
-    response.json.return_value = {"key": {"id": "ABC123"}}
-    service._request = AsyncMock(return_value=response)
+@pytest.mark.parametrize(
+    ("connected", "logged_in", "expected"),
+    [
+        (True, True, "WORKING"),
+        (True, False, "SCAN_QR_CODE"),
+        (False, False, "STOPPED"),
+    ],
+)
+def test_normalizes_evolution_go_state(connected, logged_in, expected):
+    assert normalize_evolution_status(connected, logged_in) == expected
 
+
+async def test_create_instance_uses_admin_key_and_instance_token():
+    service = EvolutionGoService("http://evolution-go", "secret")
+    response = MagicMock()
+    response.json.return_value = {"message": "success"}
+    service._request = AsyncMock(return_value=response)
+    try:
+        await service.create_instance("session-test")
+    finally:
+        await service.close()
+
+    call = service._request.await_args_list[0]
+    assert call.args[:2] == ("POST", "/instance/create")
+    assert call.kwargs["json"]["token"] == evolution_go_instance_token(
+        "secret", "session-test"
+    )
+
+
+async def test_pairing_code_uses_instance_endpoint_and_token():
+    service = EvolutionGoService("http://evolution-go", "secret")
+    response = MagicMock()
+    response.json.return_value = {"data": {"PairingCode": "ABC12345"}}
+    service._request = AsyncMock(return_value=response)
+    try:
+        code = await service.request_pairing_code(
+            "session-test", "+55 (11) 99999-9999"
+        )
+    finally:
+        await service.close()
+
+    call = service._request.await_args_list[0]
+    assert code == "ABC12345"
+    assert call.args[:2] == ("POST", "/instance/pair")
+    assert call.kwargs["json"] == {"phone": "5511999999999"}
+    assert call.kwargs["headers"]["apikey"] != "secret"
+
+
+async def test_send_text_uses_evolution_go_endpoint():
+    service = EvolutionGoService("http://evolution-go", "secret")
+    response = MagicMock()
+    response.json.return_value = {"data": {"Info": {"ID": "ABC123"}}}
+    service._request = AsyncMock(return_value=response)
     try:
         await service.send_text_message(
             "session-test", "+55 (11) 99999-9999", "Oi"
@@ -75,5 +106,5 @@ async def test_send_text_uses_number_without_chat_suffix():
         await service.close()
 
     call = service._request.await_args_list[0]
-    assert call.args[:2] == ("POST", "/message/sendText/session-test")
+    assert call.args[:2] == ("POST", "/send/text")
     assert call.kwargs["json"] == {"number": "5511999999999", "text": "Oi"}

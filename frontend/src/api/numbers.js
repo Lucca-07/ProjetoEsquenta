@@ -7,11 +7,15 @@ export const numbersApi = {
 
 export const sessionsApi = {
     list: () => api.get("/sessions"),
-    create: (phone, nodeName) =>
-        api.post("/sessions", { phone, node_name: nodeName }),
-    getPendingStatus: (sessionName, phone, nodeName) =>
+    create: (phone, nodeName, connectionMethod = "qr") =>
+        api.post("/sessions", {
+            phone,
+            node_name: nodeName,
+            connection_method: connectionMethod,
+        }),
+    getPendingStatus: (sessionName, phone, nodeName, connectionMethod = "qr") =>
         api.get(
-            `/sessions/pending/${encodeURIComponent(sessionName)}/status?phone=${encodeURIComponent(phone)}&node_name=${encodeURIComponent(nodeName)}`,
+            `/sessions/pending/${encodeURIComponent(sessionName)}/status?phone=${encodeURIComponent(phone)}&node_name=${encodeURIComponent(nodeName)}&connection_method=${encodeURIComponent(connectionMethod)}`,
         ),
     requestCode: (sessionName, phone, nodeName) =>
         api.post(

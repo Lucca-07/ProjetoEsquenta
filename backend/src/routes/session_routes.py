@@ -17,6 +17,7 @@ async def create_session(payload: SessionCreate):
     return await session_controller.create_session(
         payload.phone,
         payload.node_name,
+        payload.connection_method,
     )
 
 
@@ -38,11 +39,13 @@ async def get_pending_status(
     session_name: str,
     phone: str,
     node_name: str,
+    connection_method: str = "qr",
 ):
     return await session_controller.get_pending_status(
         session_name,
         phone,
         node_name,
+        connection_method,
     )
 
 

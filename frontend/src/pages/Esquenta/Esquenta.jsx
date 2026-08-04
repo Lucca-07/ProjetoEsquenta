@@ -265,6 +265,7 @@ export default function Esquenta() {
             const pending = await sessionsApi.create(
                 telefone.replace(/\D/g, ""),
                 NODE_NAME,
+                metodo,
             );
             if (metodo === "code") {
                 const response = await sessionsApi.requestCode(
@@ -280,6 +281,7 @@ export default function Esquenta() {
                         pending.session_name,
                         pending.phone,
                         NODE_NAME,
+                        metodo,
                     );
                     if (metodo === "qr" && status.qr) {
                         setQrValue(status.qr);

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from time import monotonic
 
 from src.repositories import number_repository, warmup_group_repository
-from src.services.evolution_service import EvolutionError, EvolutionService
+from src.services.evolution_go_service import EvolutionGoError, EvolutionGoService
 from src.utils.logger import logger
 
 
@@ -140,13 +140,13 @@ async def _refresh_all_session_statuses(numbers) -> None:
 
 
 async def _refresh_session_status(number) -> None:
-    evolution = EvolutionService(number.node.baseUrl, number.node.apiKey)
+    evolution = EvolutionGoService(number.node.baseUrl, number.node.apiKey)
     try:
         status = await evolution.get_instance_status(number.sessionName)
         if status != number.status:
             await number_repository.update_status(number.id, status)
             number.status = status
-    except EvolutionError as exc:
+    except EvolutionGoError as exc:
         logger.warning(
             f"[session] Não foi possível atualizar o status de "
             f"{number.phone}: {exc}"

@@ -1,11 +1,16 @@
 from datetime import datetime
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
 class SessionCreate(BaseModel):
     phone: str = Field(..., description="Número no formato internacional, ex: 5511999999999")
-    node_name: str = Field(..., description="Nome do no Evolution onde a instancia sera criada (ex: kvm8-1)")
+    node_name: str = Field(..., description="Nome do no Evolution Go onde a instancia sera criada (ex: kvm8-1)")
+
+
+    connection_method: Literal["qr", "code"] = "qr"
 
 
 class SessionResponse(BaseModel):

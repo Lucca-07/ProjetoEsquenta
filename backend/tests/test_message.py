@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 from src.jobs.message_job import _warmup_is_active
-from src.services.evolution_service import extract_message_id, normalize_phone
+from src.services.evolution_go_service import extract_message_id, normalize_phone
 
 
 def test_spintax_resolves_single_option():
@@ -52,8 +52,8 @@ def test_running_warmup_is_active_for_queued_message():
     assert _warmup_is_active(number) is True
 
 
-def test_extracts_message_id_from_evolution_key():
-    assert extract_message_id({"key": {"id": "ABC123"}}) == "ABC123"
+def test_extracts_message_id_from_evolution_go_info():
+    assert extract_message_id({"data": {"Info": {"ID": "ABC123"}}}) == "ABC123"
 
 
 def test_keeps_string_message_id():

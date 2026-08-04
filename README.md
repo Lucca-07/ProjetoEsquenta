@@ -32,7 +32,7 @@ Plataforma web para conectar, organizar e aquecer números de WhatsApp de forma 
 | API             | Python 3.12, FastAPI, Pydantic e Uvicorn     |
 | Persistência    | PostgreSQL e Prisma Client Python            |
 | Filas e tarefas | Redis e ARQ                                  |
-| WhatsApp        | Evolution API v2 (WhatsApp/Baileys)          |
+| WhatsApp        | Evolution Go (whatsmeow)                     |
 | Infraestrutura  | Docker e Docker Compose                      |
 | Testes          | Pytest e Pytest Asyncio                      |
 
@@ -120,9 +120,9 @@ POSTGRES_PASSWORD=
 DATABASE_URL=
 REDIS_URL=
 
-EVOLUTION_NODE1_API_KEY=
-EVOLUTION_DB_PASSWORD=
-EVOLUTION_NODES=
+EVOLUTION_GO_NODE1_API_KEY=
+EVOLUTION_GO_DB_PASSWORD=
+EVOLUTION_GO_NODES=
 
 SCHEDULER_INTERVAL_SECONDS=
 ```
@@ -140,7 +140,7 @@ Esse comando inicia:
 - documentação Swagger em `http://localhost:8000/docs`;
 - PostgreSQL na porta local `5433`;
 - Redis na porta `6379`;
-- Evolution API em `http://localhost:8080`;
+- Evolution Go em `http://localhost:8080`;
 - worker responsável pelas tarefas agendadas.
 
 Confira se a API está saudável:
@@ -148,6 +148,10 @@ Confira se a API está saudável:
 ```bash
 curl http://localhost:8000/health
 ```
+
+Na primeira execucao, abra `http://localhost:8080/manager/login` e ative a
+licenca da Evolution Go usando `EVOLUTION_GO_NODE1_API_KEY`. Antes da ativacao,
+os endpoints de WhatsApp retornam HTTP 503.
 
 Para acompanhar ou encerrar os serviços:
 
@@ -185,7 +189,7 @@ Altere esses dados no `.env` antes do primeiro start em qualquer ambiente compar
 
 ## Execução manual do backend
 
-Se preferir executar a API fora do Docker, tenha PostgreSQL, Redis e uma Evolution API acessiveis e ajuste as URLs do `.env` para `localhost`. No PowerShell:
+Se preferir executar a API fora do Docker, tenha PostgreSQL, Redis e uma Evolution Go acessiveis e ajuste as URLs do `.env` para `localhost`. No PowerShell:
 
 ```powershell
 cd backend
@@ -210,7 +214,7 @@ Para essa modalidade, use URLs como estas no `backend/.env`:
 ```env
 DATABASE_URL=postgresql://esquenta:esquenta_local@localhost:5433/esquenta
 REDIS_URL=redis://localhost:6379/0
-EVOLUTION_NODES=[{"name":"kvm8-1","base_url":"http://localhost:8080","api_key":"troque-esta-chave"}]
+EVOLUTION_GO_NODES=[{"name":"kvm8-1","base_url":"http://localhost:8080","api_key":"troque-esta-chave"}]
 ```
 
 ## Uso básico
@@ -273,21 +277,19 @@ Authorization: Bearer <token>
 
 ## Deploy em dois servidores
 
-O arquivo `backend/docker-compose.server2.yml` inicia um segundo no Evolution e seus servicos de dados. Depois de executa-lo, inclua esse no em `EVOLUTION_NODES` no servidor principal:
+O arquivo `backend/docker-compose.server2.yml` inicia um segundo no Evolution Go e seu banco. Depois de executa-lo, inclua esse no em `EVOLUTION_GO_NODES` no servidor principal:
 
 ```env
-EVOLUTION_NODES=[{"name":"kvm8-1","base_url":"http://evolution-node1:8080","api_key":"CHAVE_1"},{"name":"kvm8-2","base_url":"http://IP_PRIVADO_DO_SERVIDOR_2:8080","api_key":"CHAVE_2"}]
+EVOLUTION_GO_NODES=[{"name":"kvm8-1","base_url":"http://evolution-go-node1:8080","api_key":"CHAVE_1"},{"name":"kvm8-2","base_url":"http://IP_PRIVADO_DO_SERVIDOR_2:8080","api_key":"CHAVE_2"}]
 ```
 
-Proteja as portas, prefira uma rede privada ou VPN entre os servidores e nunca publique PostgreSQL, Redis ou Evolution sem autenticacao e regras de firewall.
+Proteja as portas, prefira uma rede privada ou VPN entre os servidores e nunca publique PostgreSQL, Redis ou Evolution Go sem autenticacao e regras de firewall.
 
 ## Colaboradores
 
 - [Lucca Rodrigues](https://github.com/Lucca-07) — Desenvolvimento do projeto;
 - [David Ferreira](https://github.com/FerreiraHub) — Desenvolvimento do projeto.
 - [Luiz Gustavo](https://github.com/SrLgart) - Prototipação do projeto
-
-Os nomes foram consolidados a partir do histórico de commits do repositório.
 
 ## Licença
 

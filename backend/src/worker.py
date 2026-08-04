@@ -1,7 +1,7 @@
 import asyncio
 
 from src.config.index import settings
-from src.config.evolution import evolution_nodes
+from src.config.evolution_go import evolution_go_nodes
 from src.config.redis import redis_settings
 from src.db import connect_db, disconnect_db
 from src.jobs.message_job import send_message_job
@@ -23,7 +23,7 @@ async def scheduler_loop(ctx):
 async def startup(ctx):
     configure_logging()
     await connect_db()
-    await sync_configured_nodes(evolution_nodes)
+    await sync_configured_nodes(evolution_go_nodes)
     ctx["scheduler_task"] = asyncio.create_task(scheduler_loop(ctx))
     logger.info("Worker arq iniciado")
 
