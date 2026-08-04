@@ -110,28 +110,22 @@ APP_NAME=esquenta-backend
 LOG_LEVEL=INFO
 API_PREFIX=/api
 
-AUTH_SECRET=troque-por-uma-chave-longa-e-aleatoria
-AUTH_TOKEN_HOURS=12
-ADMIN_NAME=Administrador
+AUTH_SECRET=
+AUTH_TOKEN_HOURS=
+ADMIN_NAME=Administrator
 ADMIN_EMAIL=admin@esquenta.local
 ADMIN_PASSWORD=Admin@123
 
-POSTGRES_PASSWORD=esquenta_local
-DATABASE_URL=postgresql://esquenta:esquenta_local@postgres:5432/esquenta
-REDIS_URL=redis://redis:6379/0
+POSTGRES_PASSWORD=
+DATABASE_URL=
+REDIS_URL=
 
-EVOLUTION_NODE1_API_KEY=troque-esta-chave
-EVOLUTION_DB_PASSWORD=troque-esta-senha
-EVOLUTION_NODES=[{"name":"kvm8-1","base_url":"http://evolution-node1:8080","api_key":"troque-esta-chave"}]
+EVOLUTION_NODE1_API_KEY=
+EVOLUTION_DB_PASSWORD=
+EVOLUTION_NODES=
 
-WARMUP_START_MESSAGES=5
-WARMUP_INCREMENT=4
-WARMUP_MAX_MESSAGES=120
-WARMUP_MAX_DAYS=30
-SCHEDULER_INTERVAL_SECONDS=60
+SCHEDULER_INTERVAL_SECONDS=
 ```
-
-Troque as credenciais antes de disponibilizar a aplicacao em uma rede. O valor de `api_key` em `EVOLUTION_NODES` deve ser igual a `EVOLUTION_NODE1_API_KEY`.
 
 ### 3. Suba o backend e os serviços
 
