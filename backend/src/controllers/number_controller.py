@@ -157,6 +157,11 @@ async def _refresh_session_status(number) -> None:
 
 async def get_summary():
     numbers = await number_repository.list_all()
+    _schedule_status_refresh(numbers)
+
+    if _status_refresh_task is not None and not _status_refresh_task.done():
+        await _status_refresh_task
+        numbers = await number_repository.list_all()
 
     connected = sum(
         1 for n in numbers

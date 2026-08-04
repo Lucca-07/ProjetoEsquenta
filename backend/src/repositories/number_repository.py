@@ -11,6 +11,7 @@ async def create_number(phone: str, session_name: str, node_id: str) -> Number:
             "phone": phone,
             "sessionName": session_name,
             "nodeId": node_id,
+            "status": "WORKING",
         }
     )
 
